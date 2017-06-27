@@ -42,7 +42,7 @@ def Cluster(features):
         Q = queue.Queue()
         Q.put(kernal_object)
         # 移除核心对象
-        to_visit -= kernal_object
+        to_visit -= set(kernal_object)
         while not Q.empty():
             # 出队
             q = Q.get()

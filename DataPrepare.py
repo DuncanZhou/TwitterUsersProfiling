@@ -144,4 +144,4 @@ def test():
     n = len(features.keys())
     print dist / (n * (n - 1) / 2)
 
-test()
+# test()
