@@ -86,7 +86,6 @@ def GetUserCategory(table="StandardUsers"):
 # 构造字典形式的特征向量全集
 def GenerateFeatures(users,table="StandardUsers"):
     '''
-
     :param users: 用户全集
     '''
     features = []

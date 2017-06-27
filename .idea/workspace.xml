@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="cdefc606-9ebd-438e-9680-87d9c97421c2" name="Default" comment="" />
+    <list default="true" id="cdefc606-9ebd-438e-9680-87d9c97421c2" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/DBSCAN_Clustering.py" afterPath="$PROJECT_DIR$/DBSCAN_Clustering.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/DataPrepare.py" afterPath="$PROJECT_DIR$/DataPrepare.py" />
+    </list>
     <ignored path="Twitter_Users_Profiling.iws" />
     <ignored path=".idea/workspace.xml" />
     <ignored path="$PROJECT_DIR$/out/" />
@@ -25,8 +29,20 @@
       <file leaf-file-name="DBSCAN_Clustering.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/DBSCAN_Clustering.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="48">
-              <caret line="2" column="20" selection-start-line="2" selection-start-column="20" selection-end-line="2" selection-end-column="20" />
+            <state relative-caret-position="822">
+              <caret line="70" column="19" selection-start-line="70" selection-start-column="19" selection-end-line="70" selection-end-column="19" />
+              <folding>
+                <element signature="e#60#81#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name=".gitignore" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/.gitignore">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="24">
+              <caret line="1" column="5" selection-start-line="1" selection-start-column="5" selection-end-line="1" selection-end-column="5" />
               <folding />
             </state>
           </provider>
@@ -35,24 +51,24 @@
       <file leaf-file-name="Distance.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Distance.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="120">
+            <state relative-caret-position="-168">
               <caret line="5" column="0" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="0" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="DataPrepare.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="DataPrepare.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/DataPrepare.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="496">
-              <caret line="145" column="34" selection-start-line="145" selection-start-column="34" selection-end-line="145" selection-end-column="34" />
+            <state relative-caret-position="2070">
+              <caret line="146" column="6" selection-start-line="146" selection-start-column="6" selection-end-line="146" selection-end-column="6" />
               <folding>
                 <element signature="e#60#74#0" expanded="true" />
-                <marker date="1498553258814" expanded="true" signature="1083:1119" ph="SELECT * FRO... missing_value" />
-                <marker date="1498553258814" expanded="true" signature="1547:1561" ph="SELECT * FRO... missing_value" />
-                <marker date="1498553258814" expanded="true" signature="2178:2210" ph="SELECT disti... missing_value" />
-                <marker date="1498553258814" expanded="true" signature="2480:2511" ph="SELECT disti... missing_value" />
+                <marker date="1498565113748" expanded="true" signature="1083:1119" ph="SELECT * FRO... missing_value" />
+                <marker date="1498565113748" expanded="true" signature="1547:1561" ph="SELECT * FRO... missing_value" />
+                <marker date="1498565113748" expanded="true" signature="2178:2210" ph="SELECT disti... missing_value" />
+                <marker date="1498565113748" expanded="true" signature="2480:2511" ph="SELECT disti... missing_value" />
               </folding>
             </state>
           </provider>
@@ -67,6 +83,9 @@
       </list>
     </option>
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="GradleLocalSettings">
     <option name="externalProjectsViewState">
       <projects_view />
@@ -75,9 +94,10 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/DBSCAN_Clustering.py" />
         <option value="$PROJECT_DIR$/Distance.py" />
         <option value="$PROJECT_DIR$/DataPrepare.py" />
+        <option value="$PROJECT_DIR$/DBSCAN_Clustering.py" />
+        <option value="$PROJECT_DIR$/.gitignore" />
       </list>
     </option>
   </component>
@@ -765,12 +785,12 @@
       <option name="presentableId" value="Default" />
       <updated>1498484467781</updated>
       <workItem from="1498484498804" duration="6825000" />
-      <workItem from="1498548245946" duration="5211000" />
+      <workItem from="1498548245946" duration="8877000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="12036000" />
+    <option name="totallyTimeSpent" value="15702000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="71" y="24" width="1849" height="1056" extended-state="6" />
@@ -784,7 +804,7 @@
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.23566215" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.23640168" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Capture Tool" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Designer" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.17581809" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
@@ -822,7 +842,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="48">
           <caret line="2" column="20" selection-start-line="2" selection-start-column="20" selection-end-line="2" selection-end-column="20" />
-          <folding />
+          <folding>
+            <element signature="e#60#81#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -834,33 +856,43 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/DBSCAN_Clustering.py">
+    <entry file="file://$PROJECT_DIR$/DataPrepare.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="48">
-          <caret line="2" column="20" selection-start-line="2" selection-start-column="20" selection-end-line="2" selection-end-column="20" />
-          <folding />
+        <state relative-caret-position="2070">
+          <caret line="146" column="6" selection-start-line="146" selection-start-column="6" selection-end-line="146" selection-end-column="6" />
+          <folding>
+            <element signature="e#60#74#0" expanded="true" />
+            <marker date="1498565113748" expanded="true" signature="1083:1119" ph="SELECT * FRO... missing_value" />
+            <marker date="1498565113748" expanded="true" signature="1547:1561" ph="SELECT * FRO... missing_value" />
+            <marker date="1498565113748" expanded="true" signature="2178:2210" ph="SELECT disti... missing_value" />
+            <marker date="1498565113748" expanded="true" signature="2480:2511" ph="SELECT disti... missing_value" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Distance.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
+        <state relative-caret-position="-168">
           <caret line="5" column="0" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/DataPrepare.py">
+    <entry file="file://$PROJECT_DIR$/DBSCAN_Clustering.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="496">
-          <caret line="145" column="34" selection-start-line="145" selection-start-column="34" selection-end-line="145" selection-end-column="34" />
+        <state relative-caret-position="822">
+          <caret line="70" column="19" selection-start-line="70" selection-start-column="19" selection-end-line="70" selection-end-column="19" />
           <folding>
-            <element signature="e#60#74#0" expanded="true" />
-            <marker date="1498553258814" expanded="true" signature="1083:1119" ph="SELECT * FRO... missing_value" />
-            <marker date="1498553258814" expanded="true" signature="1547:1561" ph="SELECT * FRO... missing_value" />
-            <marker date="1498553258814" expanded="true" signature="2178:2210" ph="SELECT disti... missing_value" />
-            <marker date="1498553258814" expanded="true" signature="2480:2511" ph="SELECT disti... missing_value" />
+            <element signature="e#60#81#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.gitignore">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="24">
+          <caret line="1" column="5" selection-start-line="1" selection-start-column="5" selection-end-line="1" selection-end-column="5" />
+          <folding />
         </state>
       </provider>
     </entry>
