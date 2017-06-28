@@ -124,7 +124,7 @@ def Normalized(features):
     return new_features
 
 # 得到最终的特征全集
-def Features(table):
+def Features(table="StandardUsers"):
     features = GenerateFeatures(GetUsersFeature(table))
     new_features = Normalized(features)
     features = {}
