@@ -43,11 +43,14 @@ def run():
     # 使用层次聚类算法
     # method = hiec.HierarchicalCluster()
     # 使用修改版的k-means聚类
-    method = kmeans.KMeansCluster()
+    # method = kmeans.KMeansCluster()
     # 得到聚类结果
-    results,means_vector = method.Cluster()
+    # results,means_vector = method.Cluster()
+
     # 选择得到代表性子集
-    profile_data = Select.Select1(results,means_vector)
+    # profile_data = Select.Select1(results,means_vector)
+    profile_data = Select.Select2()
+
     print "代表性子集为:"
     print profile_data.keys()
 

@@ -101,9 +101,9 @@ class KMeansCluster:
                     categories.append(self.features[id][5])
                 number = len(cluster[i])
                 interets_tags = dict(collections.Counter(interest_tags))
+                new_interst = map(lambda x:x[0],sorted(interets_tags.items(),key = lambda interest_tags:interest_tags[1],reverse=True)[:10])
                 category = sorted(dict(collections.Counter(categories)).items(),key = lambda x:x[1],reverse=True)[0][0]
                 location = sorted(dict(collections.Counter(location)).items(),key = lambda x:x[1],reverse=True)[0][0]
-                new_interst = map(lambda x:x[0],sorted(interets_tags.items(),key = lambda interest_tags:interest_tags[1],reverse=True)[:10])
                 new_means_vector = (sum_fratio / number,sum_activity / number,sum_influence / number,new_interst,location,category)
                 # 更新均值向量
                 if new_means_vector[0] == k_means_vector[i][0] and new_means_vector[1] == k_means_vector[i][1] and new_means_vector[2] == k_means_vector[i][2] and new_means_vector[4] == k_means_vector[i][4] and new_means_vector[5] == k_means_vector[i][5]:
