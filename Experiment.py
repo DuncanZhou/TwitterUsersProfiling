@@ -48,9 +48,12 @@ def run():
     results,means_vector = method.Cluster()
     # 选择得到代表性子集
     profile_data = Select.Select1(results,means_vector)
+    print "代表性子集为:"
+    print profile_data.keys()
+
     # 测试代表性
-    representation = metric(features,profile_data)
-    print representation
+    representation_loss = metric(features,profile_data)
+    print representation_loss
     endtime = time.time()
     print "cost %f seconds" % (endtime - starttime)
 

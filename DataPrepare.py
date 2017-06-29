@@ -17,6 +17,10 @@ class TwitterUser:
         self.location = location
         self.category = category
 
+# 全局变量
+location_dic = {}
+category_dic = {}
+
 # 数据库连接
 def Connection():
     conn = MySQLdb.connect(
@@ -90,9 +94,9 @@ def GenerateFeatures(users,table="StandardUsers"):
     '''
     features = []
     locations = GetUserLocation(table)
-    location_dic = {}
+
     categories = GetUserCategory(table)
-    category_dic = {}
+
     for i in range(len(locations)):
         location_dic[locations[i]] = i
     for i in range(len(categories)):

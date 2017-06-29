@@ -11,7 +11,7 @@ def Select1(cluster,means_vector):
     '''
 
     :param cluster: 聚类结果
-    :return: 返回profiledata
+    :return: 返回profiledata,类型为字典类型{userid:vector}
     '''
     # 方法一: 从聚类结果中找到近圆心的向量
     profile_data = {}
@@ -20,7 +20,7 @@ def Select1(cluster,means_vector):
     while i < len(cluster):
         to_add_userid = cluster[i].pop()
         to_add_vector = features[to_add_userid]
-        print means_vector[i]
+        # print means_vector[i]
         min = dist.distance(to_add_vector,means_vector[i])
         for userid in cluster[i]:
             if dist.distance(features[userid],means_vector[i]) < min:
