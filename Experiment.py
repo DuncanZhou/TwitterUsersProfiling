@@ -2,8 +2,11 @@
 #-*-coding:utf-8-*-
 '''@author:duncan'''
 
+import DataPrepare as datapre
 import DBSCAN_Clustering as dbscan
 import Hierarchical_Clustering as hiec
+import KMeans_Clustering as kmeans
+import Select
 import Distance as dist
 import time
 import math
@@ -11,6 +14,7 @@ import math
 # 惩罚值参数设置
 a = 2
 b = 0.001
+features = datapre.Features()
 
 #　子集的代表性衡量
 def metric(origin_features,profile_features):
@@ -18,7 +22,7 @@ def metric(origin_features,profile_features):
     total_number = len(origin_features.keys())
     part1 = 0
     for origin in origin_features.keys():
-        min = dist.distance(origin_features[origin],origin_features[profile_features[0]])
+        min = dist.distance(origin_features[origin],profile_features[profile_features.keys()[0]])
         # 在profile中选取到该对象距离最小的值
         for profile in profile_features:
             if dist.distance(origin_features[origin],origin_features[profile]) < min:
@@ -37,8 +41,16 @@ def run():
     # 使用dbscan算法聚类
     # method = dbscan.DBSCANCluster()
     # 使用层次聚类算法
-    method = hiec.HierarchicalCluster()
-    results = method.Cluster()
+    # method = hiec.HierarchicalCluster()
+    # 使用修改版的k-means聚类
+    method = kmeans.KMeansCluster()
+    # 得到聚类结果
+    results,means_vector = method.Cluster()
+    # 选择得到代表性子集
+    profile_data = Select.Select1(results,means_vector)
+    # 测试代表性
+    representation = metric(features,profile_data)
+    print representation
     endtime = time.time()
     print "cost %f seconds" % (endtime - starttime)
 

@@ -98,7 +98,7 @@ def GenerateFeatures(users,table="StandardUsers"):
     for i in range(len(categories)):
         category_dic[categories[i]] = i
     for user in users:
-        features.append((user.fratio,user.activity,user.influence,user.interest_tags,location_dic[user.location],category_dic[user.category],user.userid))
+        features.append((user.fratio,user.activity,user.influence,user.interest_tags.split(","),location_dic[user.location],category_dic[user.category],user.userid))
     return features
 
 # 前三个特征需要归一化:采用z-score标准化

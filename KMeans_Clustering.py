@@ -22,7 +22,7 @@ class KMeansCluster:
     def GenerateK(self,total_number):
         '''
 
-        :param total_number: 样本呢总数
+        :param total_number: 样本的总数
         :return: 返回k的大小
         '''
         if total_number >= 1 and total_number < 10000:
@@ -111,7 +111,7 @@ class KMeansCluster:
                 break
             iteration += 1
             print "迭代%d次" % iteration
-        return cluster
+        return cluster,k_means_vector
 
 
 
