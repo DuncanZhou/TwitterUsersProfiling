@@ -79,7 +79,6 @@ class KMeansCluster:
                 new_element.add(key)
                 cluster[id] = cluster[id] | new_element
 
-
             # 重新更新均值向量,即k_means_vector
             i = 0
             flag = True

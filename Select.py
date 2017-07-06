@@ -32,11 +32,11 @@ def Select1(cluster,means_vector):
     return profile_data
 
 # 方法二: 均值和经验选取
-def Select2():
+def Select2(to_find):
     # 找出每个category的各个均值,然后找出每个类中和该均值最近的返回
     category_dic = datapre.category_dic
     profile = {}
-    for i in range(len(category_dic.keys())):
+    for i in to_find:
         sum_fratio = 0
         sum_activity = 0
         sum_influence = 0
@@ -66,7 +66,6 @@ def Select2():
 
         # 将其加入代表性子集
         profile[id] = features[id]
-
     return profile
 
 

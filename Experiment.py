@@ -13,7 +13,7 @@ import math
 
 # 惩罚值参数设置
 a = 2
-b = 0.001
+b = 2
 features = datapre.Features()
 
 #　子集的代表性衡量
@@ -30,9 +30,9 @@ def metric(origin_features,profile_features):
         part1 += min
 
     # 第二部分由与profile大小相关的惩罚值函数构成
-    part2 = math.pow(a,size_profile * 1.0 / (b * total_number))
-    representation = part1 + part2
-    return representation
+    part2 = math.pow(a, b * size_profile * 1.0 / total_number)
+    loss = part1 + part2
+    return loss
 
 # 实验运行
 def run():
@@ -43,13 +43,13 @@ def run():
     # 使用层次聚类算法
     # method = hiec.HierarchicalCluster()
     # 使用修改版的k-means聚类
-    # method = kmeans.KMeansCluster()
+    method = kmeans.KMeansCluster()
     # 得到聚类结果
-    # results,means_vector = method.Cluster()
+    results,means_vector = method.Cluster()
 
     # 选择得到代表性子集
-    # profile_data = Select.Select1(results,means_vector)
-    profile_data = Select.Select2()
+    profile_data = Select.Select1(results,means_vector)
+    # profile_data = Select.Select2(range(9))
 
     print "代表性子集为:"
     print profile_data.keys()

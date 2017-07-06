@@ -10,6 +10,9 @@ import math
 # 闵可夫斯基距离中的P参数,P为2时,则为欧式距离
 P = 2
 
+# 高斯核函数中的sigma
+sigma = 2
+
 # 每个样本的格式[Followers/Following,Activity,Influence,Interests_tags,location,category]
 # 定义每个特征的权重
 weight = [0.1,0.15,0.2,0.1,0.15,0.3]
@@ -30,6 +33,7 @@ def distance(feature1,feature2):
     else: part3 = 1
     if feature1[5] == feature2[5]: part4 = 0
     else: part4 = 1
+    # distance = math.exp(-1 * 1.0 / (2 * math.pow(sigma,2)) * math.pow(part1 + weight[3] * part2 + weight[4] * part3 + weight[5] * part4,1.0 / P))
     distance = math.pow(part1 + weight[3] * part2 + weight[4] * part3 + weight[5] * part4,1.0 / P)
     return distance
 
