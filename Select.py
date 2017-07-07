@@ -68,4 +68,11 @@ def Select2(to_find):
         profile[id] = features[id]
     return profile
 
+# 根据id搜寻,返回字典形式
+def Select3(k_seeds):
+    profile = {}
+    for seed in k_seeds:
+        profile[seed] = features[seed]
+    return profile
+
 

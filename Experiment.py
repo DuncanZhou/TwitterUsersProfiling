@@ -6,6 +6,7 @@ import DataPrepare as datapre
 import DBSCAN_Clustering as dbscan
 import Hierarchical_Clustering as hiec
 import KMeans_Clustering as kmeans
+import EM_Clustering as em
 import Select
 import Distance as dist
 import time
@@ -30,7 +31,7 @@ def metric(origin_features,profile_features):
         part1 += min
 
     # 第二部分由与profile大小相关的惩罚值函数构成
-    part2 = math.pow(a, b * size_profile * 1.0 / total_number)
+    part2 = b * size_profile * 1.0 / total_number
     loss = part1 + part2
     return loss
 
@@ -42,14 +43,23 @@ def run():
     # method = dbscan.DBSCANCluster()
     # 使用层次聚类算法
     # method = hiec.HierarchicalCluster()
+
     # 使用修改版的k-means聚类
     method = kmeans.KMeansCluster()
-    # 得到聚类结果
     results,means_vector = method.Cluster()
+    profile_data = Select.Select1(results,means_vector)
+
+    # 使用EM聚类
+    # method = em.EMCluster()
+    # 得到聚类结果
+    # results,k_seeds = method.Cluster()
+    # profile_data = Select.Select3(k_seeds)
+
 
     # 选择得到代表性子集
-    profile_data = Select.Select1(results,means_vector)
+
     # profile_data = Select.Select2(range(9))
+
 
     print "代表性子集为:"
     print profile_data.keys()
