@@ -11,7 +11,7 @@ import math
 P = 2
 
 # 高斯核函数中的sigma
-sigma = 2
+sigma = 1
 
 # 每个样本的格式[Followers/Following,Activity,Influence,Interests_tags,location,category]
 # 定义每个特征的权重

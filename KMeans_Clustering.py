@@ -17,22 +17,10 @@ class KMeansCluster:
         self.alpha = 0.001
         # 定义迭代次数
         self.Max_iteration = 100
+        # 定义聚类簇个数
+        self.k_min = 9
 
     # 确定聚类簇的个数
-    @staticmethod
-    def GenerateK(alpha,total_number):
-        '''
-
-        :param total_number: 样本的总数
-        :return: 返回k的大小
-        '''
-        if total_number >= 1 and total_number < 10000:
-            k = 9
-        elif total_number >= 10000 and total_number < 100000:
-            k = int(alpha * total_number)
-        else:
-            k = 100
-        return k
 
     # 根据字典的value值查找key值
     @staticmethod
@@ -44,20 +32,14 @@ class KMeansCluster:
 
     # k-means聚类
     def Cluster(self):
-        k = self.GenerateK(self.alpha,len(self.features.keys()))
-        k_seeds = set()
+        k = self.k_min
+        k_seeds = datapre.Initial(self.features,self.k_min)
         k_means_vector = {}
 
         # 随机选择k个作为初始均值向量(使得选择的种子包含了所有的类别
-        i = 0
-        while len(k_seeds) < k:
-            for key in self.features.keys():
-                if self.features[key][5] == (i % 9) and key not in k_seeds:
-                    k_seeds.add(key)
-                    k_means_vector[len(k_seeds) - 1] = self.features[key]
-                    break
-            i += 1
-        print "%d个种子已选好" % k
+        for seed in k_seeds:
+            k_means_vector[seed] = self.features[seed]
+
         # 开始聚类
         iteration = 0
         while iteration < self.Max_iteration:

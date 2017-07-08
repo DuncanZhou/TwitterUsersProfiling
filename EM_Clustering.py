@@ -19,10 +19,8 @@ class EMCluster:
         self.features = datapre.Features()
         # 定义alpha,用来控制聚类簇个数
         self.alpha = 0.001
-
-    # 选择聚类簇的个数
-    def generateK(self,totalnumber):
-        return kmean.KMeansCluster.GenerateK(self.alpha,totalnumber)
+        # 定义代表性向量最小个数(因为人物领域的类别为9个)
+        self.k_min = 9
 
     # 聚类函数
     def Cluster(self):
@@ -30,20 +28,9 @@ class EMCluster:
 
         :return: 聚类结果list(set())和每个聚类簇中最具代表性的元素list
         '''
-        k = self.generateK(len(self.features.keys()))
-        k_seeds = []
-        # k_representative_vector = {}
+        k = self.k_min
+        k_seeds = list(datapre.Initial(self.features,self.k_min))
 
-        # 随机选择k个作为初始均值向量(使得选择的种子包含了所有的类别)
-        i = 0
-        while len(k_seeds) < k:
-            for key in self.features.keys():
-                if self.features[key][5] == (i % 9) and key not in k_seeds:
-                    k_seeds.append(key)
-                    # k_representative_vector[len(k_seeds) - 1] = self.features[key]
-                    break
-            i += 1
-        print "%d个种子已选好" % k
         # 开始聚类
         # 设置聚类次数
         iteration = 0

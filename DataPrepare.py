@@ -137,6 +137,24 @@ def Features(table="StandardUsers"):
         features[userid] = feature[:-1]
     return features
 
+def Initial(features,k):
+    '''
+
+    :param k: 随机初始化k个向量
+    :return: 返回
+    '''
+    # 随机选择k个作为初始均值向量(使得选择的种子包含了所有的类别
+    k_seeds = set()
+    i = 0
+    while len(k_seeds) < k:
+        for key in features.keys():
+            if features[key][5] == (i % k) and key not in k_seeds:
+                k_seeds.add(key)
+                break
+        i += 1
+    print "%d个种子已选好" % k
+    return k_seeds
+
 # 测试距离
 def test():
     table = "StandardUsers"
