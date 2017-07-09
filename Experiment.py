@@ -36,18 +36,17 @@ def run():
 
     # 使用EM聚类
     # method = em.EMCluster()
-    # 得到聚类结果
+    # # 得到聚类结果
     # results,k_seeds = method.Cluster()
     # profile_data = Select.Select3(k_seeds)
 
-
-    # 选择得到代表性子集
-
+    # 均值搜索
     # profile_data = Select.Select2(range(9))
 
     # 使用局部搜索算法
     localsearch = ls.LocalSearch()
     profile_data = localsearch.Search()
+
     print "代表性子集为:"
     print profile_data.keys()
 

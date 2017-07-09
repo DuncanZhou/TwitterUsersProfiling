@@ -20,6 +20,7 @@ def metric(origin_features,profile_features):
         part1 += min
 
     # 第二部分由与profile大小相关的惩罚值函数构成
-    part2 = b * size_profile * 1.0 / total_number
+    # part2 = b * (total_number - int(total_number * 1.0 / size_profile))
+    part2 = b * (size_profile * 1.0 / total_number )
     loss = part1 + part2
     return loss
