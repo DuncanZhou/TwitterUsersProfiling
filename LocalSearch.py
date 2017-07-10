@@ -46,12 +46,10 @@ class LocalSearch:
                 continue
             # 该邻居向量已经被访问过了
             has_checked.add(neighbour)
-            print len(s_current)
-            print Loss_current
             # 将该向量弹出,将新的邻居加入,并检查
             s_current.pop(checking_seed)
             s_current[neighbour] = self.features[neighbour]
-
+            print Loss_current
             if metric.metric(self.features,s_current) < Loss_current:
                 # 邻居加入后,使得目标函数降低,s_current不改变,将Q中当前seed的邻居全部移除
                 new_Q = Queue.Queue()

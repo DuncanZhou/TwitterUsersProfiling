@@ -87,11 +87,11 @@ class EMCluster:
                 # 收敛,停止迭代
                 break
             iteration += 1
-            print "迭代%d次" % iteration
+            # print "迭代%d次" % iteration
 
         # 对聚类结果进行输出
-        for i in range(len(cluster)):
-            print "聚类簇:%d,类别特征:%s,包含样本个数:%d" % (i,kmean.KMeansCluster.find_key(datapre.category_dic,self.features[k_seeds[i]][5]),len(cluster[i]))
+        # for i in range(len(cluster)):
+        #     print "聚类簇:%d,类别特征:%s,包含样本个数:%d" % (i,kmean.KMeansCluster.find_key(datapre.category_dic,self.features[k_seeds[i]][5]),len(cluster[i]))
         return cluster,k_seeds
 
 

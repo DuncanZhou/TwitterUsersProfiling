@@ -8,6 +8,7 @@ import Hierarchical_Clustering as hiec
 import KMeans_Clustering as kmeans
 import EM_Clustering as em
 import LocalSearch as ls
+import Recursion_Clustering as rcluster
 import Metric
 import Select
 import Distance as dist
@@ -44,8 +45,12 @@ def run():
     # profile_data = Select.Select2(range(9))
 
     # 使用局部搜索算法
-    localsearch = ls.LocalSearch()
-    profile_data = localsearch.Search()
+    # localsearch = ls.LocalSearch()
+    # profile_data = localsearch.Search()
+
+    #　使用递归聚类方法
+    method = rcluster.Recursion_Cluster()
+    profile_data = method.Search()
 
     print "代表性子集为:"
     print profile_data.keys()
