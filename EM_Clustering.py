@@ -2,7 +2,6 @@
 #-*-coding:utf-8-*-
 '''@author:duncan'''
 
-import KMeans_Clustering as kmean
 import DataPrepare as datapre
 import Distance as dist
 
@@ -30,7 +29,8 @@ class EMCluster:
         '''
         k = self.k_min
         k_seeds = list(datapre.Initial(self.features,self.k_min))
-
+        # 设置一个字典用来记录各个聚类簇中最大代表性的loss
+        seeds_loss = {}
         # 开始聚类
         # 设置聚类次数
         iteration = 0
@@ -75,6 +75,9 @@ class EMCluster:
                         representative_id = id
                         min = distance
 
+                # 记录代表性元素的代表性丢失
+                seeds_loss[representative_id] = min
+
                 # 替换新的代表性的向量
                 if k_seeds[i] != representative_id:
                     k_seeds[i] = representative_id
@@ -89,10 +92,13 @@ class EMCluster:
             iteration += 1
             # print "迭代%d次" % iteration
 
+        for seed in seeds_loss.keys():
+            if seed not in k_seeds:
+                seeds_loss.pop(seed)
         # 对聚类结果进行输出
         # for i in range(len(cluster)):
         #     print "聚类簇:%d,类别特征:%s,包含样本个数:%d" % (i,kmean.KMeansCluster.find_key(datapre.category_dic,self.features[k_seeds[i]][5]),len(cluster[i]))
-        return cluster,k_seeds
+        return cluster,k_seeds,seeds_loss
 
 
 

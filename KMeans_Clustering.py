@@ -22,14 +22,6 @@ class KMeansCluster:
 
     # 确定聚类簇的个数
 
-    # 根据字典的value值查找key值
-    @staticmethod
-    def find_key(dict,value):
-        for key in dict.keys():
-            if value == dict[key]:
-                return key
-        return None
-
     # k-means聚类
     def Cluster(self):
         k = self.k_min
@@ -104,7 +96,7 @@ class KMeansCluster:
 
         # 对聚类结果进行输出
         for i in range(len(cluster)):
-            print "聚类簇:%d,类别特征:%s,包含样本个数:%d" % (i,self.find_key(datapre.category_dic,k_means_vector[i][5]),len(cluster[i]))
+            print "聚类簇:%d,类别特征:%s,包含样本个数:%d" % (i,datapre.find_key(datapre.category_dic,k_means_vector[i][5]),len(cluster[i]))
         return cluster,k_means_vector
 
 

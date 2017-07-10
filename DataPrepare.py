@@ -155,6 +155,13 @@ def Initial(features,k):
     print "%d个种子已选好" % k
     return k_seeds
 
+# 根据字典的value值查找key值
+def find_key(dict,value):
+    for key in dict.keys():
+        if value == dict[key]:
+            return key
+    return None
+
 # 测试距离
 def test():
     table = "StandardUsers"

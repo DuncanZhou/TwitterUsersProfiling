@@ -52,8 +52,9 @@ def run():
     method = rcluster.Recursion_Cluster()
     profile_data = method.Search()
 
-    print "代表性子集为:"
-    print profile_data.keys()
+    print "代表性子集大小为:%d" % len(profile_data.keys())
+    for key in profile_data.keys():
+        print key + " ==> " + datapre.find_key(datapre.category_dic,features[key][5])
 
     # 测试代表性
     representation_loss = Metric.metric(features,profile_data)
