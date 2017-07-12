@@ -74,10 +74,15 @@ class Recursion_Cluster:
             # for check in to_check:
             for i in range(minHeap.size()):
                 # s_current[check[0]] = self.features[check[0]]
+                # print len(s_current)
+                # print Loss_current
                 check = minHeap.pop()[0]
                 s_current[check] = self.features[check]
-                if metric.metric(self.features,s_current) >= Loss_current:
+                if metric.metric(self.features,s_current) > Loss_current:
                     s_current.pop(check)
+                else:
+                    # 更新Loss_current
+                    Loss_current = metric.metric(self.features,s_current)
             iteration += 1
             print "迭代%d次" % iteration
             if len(s_current) == old_size:

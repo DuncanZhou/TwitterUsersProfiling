@@ -9,6 +9,7 @@ import KMeans_Clustering as kmeans
 import EM_Clustering as em
 import LocalSearch as ls
 import Recursion_Clustering as rcluster
+import Clustering_NN as enn
 import Metric
 import Select
 import Distance as dist
@@ -35,21 +36,16 @@ def run():
     # results,means_vector = method.Cluster()
     # profile_data = Select.Select1(results,means_vector)
 
-    # 使用EM聚类
-    # method = em.EMCluster()
-    # # 得到聚类结果
-    # results,k_seeds = method.Cluster()
-    # profile_data = Select.Select3(k_seeds)
-
-    # 均值搜索
-    # profile_data = Select.Select2(range(9))
-
     # 使用局部搜索算法
     # localsearch = ls.LocalSearch()
     # profile_data = localsearch.Search()
 
     #　使用递归聚类方法
-    method = rcluster.Recursion_Cluster()
+    # method = rcluster.Recursion_Cluster()
+    # profile_data = method.Search()
+
+    # 使用聚类后再搜索方法
+    method = enn.Clustering_NN()
     profile_data = method.Search()
 
     print "代表性子集大小为:%d" % len(profile_data.keys())

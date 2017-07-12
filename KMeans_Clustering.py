@@ -33,10 +33,11 @@ class KMeansCluster:
             k_means_vector[seed] = self.features[seed]
 
         # 开始聚类
+        # 聚类簇
+        cluster = []
         iteration = 0
         while iteration < self.Max_iteration:
-            # 聚类簇
-            cluster = []
+
             for i in range(k):
                 cluster.append(set())
 
