@@ -35,7 +35,6 @@ def Pre(features):
     distances.sort()
     # 得到中位数
     median = (distances[len(distances) / 2] + distances[len(distances) / 2 - 1]) / 2
-    print median
     for rowid in range(len(features.keys())):
         for colid in range(len(features.keys())):
             # 对角线元素等于其余元素中位数
@@ -81,22 +80,19 @@ def AP(S,features,lamda):
 
         # 更新A矩阵
         for rowIndex in range(row_n):
+            iSum = [r for r in R[rowIndex]]
+            ifit = filter(isNonNegative,iSum)
+            asum = sum(ifit)
             for colIndex in range(row_n):
+                if R[colIndex,colIndex] > 0:
+                    asum -= R[colIndex,colIndex]
                 # 对角线情况
                 if colIndex == rowIndex:
-                    asum = 0
-                    for j in range(row_n):
-                        if j != colIndex:
-                            # 只加入非负的数
-                            asum += max(0,R[j,colIndex])
                     new_availbility = asum
                 else:
-                    asum = 0
-                    for j in range(row_n):
-                        if j != rowIndex and j != colIndex:
-                            asum += max(0,R[j,colIndex])
-                    result = asum + R[colIndex,colIndex]
-                    new_availbility = min(result,0)
+                    if R[rowIndex,colIndex] < 0:
+                        asum += R[colIndex,colIndex]
+                    new_availbility = min(asum,0)
                 A[rowIndex,colIndex] = lamda * A[rowIndex,colIndex] + (1 - lamda) * new_availbility
 
         print "A矩阵更新完成"
@@ -125,5 +121,5 @@ def AP(S,features,lamda):
     return s_current
 
 def run(features):
-    return AP(Pre(features),features,0.5)
+    return AP(Pre(features),features,0.01)
 
