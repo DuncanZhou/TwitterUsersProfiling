@@ -10,6 +10,7 @@ import EM_Clustering as em
 import LocalSearch as ls
 import Recursion_Clustering as rcluster
 import Clustering_NN as enn
+import AffinityPropagation as ap
 import Metric
 import Select
 import Distance as dist
@@ -45,12 +46,15 @@ def run():
     # profile_data = method.Search()
 
     # 使用聚类后再搜索方法
-    method = enn.Clustering_NN()
-    profile_data = method.Search()
+    # method = enn.Clustering_NN()
+    # profile_data = method.Search()
+
+    # 使用Affinity Propagation方法
+    profile_data = ap.run(datapre.Features())
 
     print "代表性子集大小为:%d" % len(profile_data.keys())
-    for key in profile_data.keys():
-        print key + " ==> " + datapre.find_key(datapre.category_dic,features[key][5])
+    # for key in profile_data.keys():
+    #     print key + " ==> " + datapre.find_key(datapre.category_dic,features[key][5])
 
     # 测试代表性
     representation_loss = Metric.metric(features,profile_data)
