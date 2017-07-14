@@ -8,7 +8,7 @@ import Distance as dist
 import DataPrepare as datapre
 
 # 设置迭代次数
-Max_iteration = 5
+Max_iteration = 10
 
 # 数据初始化为矩阵形式
 def Pre(features):
@@ -78,22 +78,25 @@ def AP(S,features,lamda):
                 R[i,j] = lamda * R[i,j] + (1 - lamda) * new_responsibility
         print "R矩阵更新完成"
 
+        RT = R.T
         # 更新A矩阵
-        for rowIndex in range(row_n):
-            iSum = [r for r in R[rowIndex]]
+        for k in range(row_n):
+            iSum = [r for r in RT[k]]
             ifit = filter(isNonNegative,iSum)
             asum = sum(ifit)
-            for colIndex in range(row_n):
-                if R[colIndex,colIndex] > 0:
-                    asum -= R[colIndex,colIndex]
+            if R[k,k] > 0:
+                asum -= R[k,k]
+            for i in range(row_n):
                 # 对角线情况
-                if colIndex == rowIndex:
+                if i == k:
                     new_availbility = asum
                 else:
-                    if R[rowIndex,colIndex] < 0:
-                        asum += R[colIndex,colIndex]
+                    if R[i,k] > 0:
+                        asum -= R[i,k]
+                    if R[k,k] < 0:
+                        asum += R[k,k]
                     new_availbility = min(asum,0)
-                A[rowIndex,colIndex] = lamda * A[rowIndex,colIndex] + (1 - lamda) * new_availbility
+                A[i,k] = lamda * A[i,k] + (1 - lamda) * new_availbility
 
         print "A矩阵更新完成"
         # 计算A[i,j] + R[i,j]
@@ -121,5 +124,5 @@ def AP(S,features,lamda):
     return s_current
 
 def run(features):
-    return AP(Pre(features),features,0.01)
+    return AP(Pre(features),features,0.001)
 
