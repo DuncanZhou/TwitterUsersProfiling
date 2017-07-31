@@ -124,5 +124,5 @@ def AP(S,features,lamda):
     return s_current
 
 def run(features):
-    return AP(Pre(features),features,0.001)
+    return AP(Pre(features),features,0.01)
 
