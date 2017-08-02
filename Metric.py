@@ -10,21 +10,22 @@ import random
 a = 2
 b = 50
 Sampling_Number = 1000
+# 一共分为三个部分,属性损耗,分布损耗,代表性子集差异性
 
 # sigmoid函数,挤压函数
 def sigmoid(x):
     return 1 * 1.0 / (1 + math.exp(-x))
 
 #  属性特征损耗
-def AttributeLoss(origin_features,profile_features):
+def AttributeLoss(origin_features,profiles):
     loss = 0
     for key in origin_features.keys():
-        list = [dist.distance(origin_features[key],profile_features[u]) for u in profile_features.keys()]
+        list = [dist.distance(origin_features[key],origin_features[u]) for u in profiles]
         loss += min(list)
     return loss
 
 # 领域分布损耗
-def DistributionLoss(original_features,profile_features):
+def DistributionLoss(original_features,profiles):
     categories = {}
     for key in original_features.keys():
         if original_features[key][5] not in categories.keys():
@@ -35,14 +36,14 @@ def DistributionLoss(original_features,profile_features):
         categories[key] = categories[key] * 1.0 / len(original_features)
 
     profile_categories = {}
-    for key in profile_features.keys():
-        if profile_features[key][5] not in profile_categories.keys():
-            profile_categories[profile_features[key][5]] = 1
+    for key in profiles:
+        if original_features[key][5] not in profile_categories.keys():
+            profile_categories[original_features[key][5]] = 1
         else:
             profile_categories[original_features[key][5]] += 1
 
     for key in profile_categories.keys():
-        profile_categories[key] = profile_categories[key] * 1.0 / len(profile_features)
+        profile_categories[key] = profile_categories[key] * 1.0 / len(profiles)
 
     # 统计损耗
     loss = 0
@@ -54,15 +55,19 @@ def DistributionLoss(original_features,profile_features):
     return math.sqrt(loss)
 
 # 子集内部差异性
-def Dissimilarity(profile_features):
+def Dissimilarity(origin_features,profiles):
     # 先将所有人分类
     categories = {}
-    for key in profile_features.keys():
-        if profile_features[key][5] not in categories.keys():
+    for key in profiles:
+        if origin_features[key][5] not in categories.keys():
             list = [key]
-            categories[profile_features[key][5]] = list
+            categories[origin_features[key][5]] = list
         else:
-            categories[profile_features[key][5]].append(key)
+            categories[origin_features[key][5]].append(key)
+
+    # 只有一个领域的用户
+    if len(categories) == 1:
+        return 1
 
     # 寻找每个领域与其他领域之间的相似度
     total_similarity = 0
@@ -75,7 +80,7 @@ def Dissimilarity(profile_features):
                 # 在target和other中寻找距离最小的值
                 minimals = []
                 for id1 in targets:
-                    minimals.append(min([dist.distance(profile_features[id1],profile_features[id2]) for id2 in other]))
+                    minimals.append(min([dist.distance(origin_features[id1],origin_features[id2]) for id2 in other]))
                 similarity += 2 * sigmoid(1.0 / min(minimals)) - 1
         total_similarity +=  similarity
 
@@ -104,16 +109,16 @@ def Sampling(original_features):
         i += 1
     return max,min
 
+# 一共分为三个部分,属性损耗,分布损耗,代表性子集差异性
+maxn,minn = Sampling(datapre.Features())
 #　代表性子集的代表性衡量
-def metric(origin_features,profile_features):
+def metric(origin_features,profiles):
     category_number = len(datapre.category_dic)
     total_number = len(origin_features.keys())
-    # 一共分为三个部分,属性损耗,分布损耗,代表性子集差异性
-    max,min = Sampling(origin_features)
-    loss1 = ((AttributeLoss(origin_features,profile_features)) - total_number * min) / (total_number * max - total_number * min)
-    loss2 = DistributionLoss(origin_features,profile_features) / math.sqrt(category_number)
-    loss3 = Dissimilarity(profile_features) / category_number
-    print loss1,loss2,loss3
+
+    loss1 = ((AttributeLoss(origin_features,profiles)) - total_number * minn) / (total_number * maxn - total_number * minn)
+    loss2 = DistributionLoss(origin_features,profiles) / math.sqrt(category_number)
+    loss3 = Dissimilarity(origin_features,profiles) / category_number
     loss = loss1 + loss2 + loss3
     return loss
 
@@ -127,4 +132,4 @@ def test():
         if i > 20:
             break
     print metric(features,profile_features)
-test()
+# test()
