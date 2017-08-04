@@ -86,6 +86,43 @@ def Dissimilarity(origin_features,profiles):
 
     return total_similarity / (len(categories) - 1)
 
+# 检查代表性子集中任意两个领域的相似性是否超出某个阈值
+def checkTypical(origin_features,profiles,epsilon):
+    '''
+
+    :param origin_features: 原始数据集
+    :param profiles:  代表性子集ids
+    :param epsilon: 阈值
+    :return:
+    '''
+    # 先将所有人分类
+    categories = {}
+    for key in profiles:
+        if origin_features[key][5] not in categories.keys():
+            list = [key]
+            categories[origin_features[key][5]] = list
+        else:
+            categories[origin_features[key][5]].append(key)
+
+    # 只有一个领域的用户
+    if len(categories) == 1:
+        return 1
+
+    for key1 in categories.keys():
+        targets = categories[key1]
+        for key2 in categories.keys():
+            if key2 != key1:
+                other = categories[key2]
+                # 在target和other中寻找距离最小的值
+                minimals = []
+                for id1 in targets:
+                    minimals.append(min([dist.distance(origin_features[id1],origin_features[id2]) for id2 in other]))
+                similarity = 2 * sigmoid(1.0 / min(minimals)) - 1
+                print similarity
+                if similarity > epsilon:
+                    return False
+    return True
+
 # 抽样选取最大和最小距离
 def Sampling(original_features):
     total_number = len(original_features)

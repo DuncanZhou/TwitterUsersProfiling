@@ -20,6 +20,7 @@ weight = [0.16,0.21,0.26,0.16,0.21]
 
 # 距离函数
 def distance(feature1,feature2):
+    # 非对称函数,求feature1对feature2的代表性损耗
     # 前三个特征属于连续特征,基于闵可夫斯基来计算
     part1 = 0
     for i in range(3):

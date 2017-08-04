@@ -17,9 +17,6 @@ class TwitterUser:
         self.location = location
         self.category = category
 
-# 全局变量
-location_dic = {}
-category_dic = {}
 
 # 数据库连接
 def Connection():
@@ -75,6 +72,7 @@ def GetUserLocation(table="StandardUsers"):
     location = []
     for data in datas:
         location.append(data['time_zone'])
+    Close(conn,cursor)
     return location
 
 # 获取用户所有的类别,用来映射category属性
@@ -85,6 +83,7 @@ def GetUserCategory(table="StandardUsers"):
     categories = []
     for data in datas:
         categories.append(data['category'])
+    Close(conn,cursor)
     return categories
 
 # 构造字典形式的特征向量全集
@@ -97,13 +96,26 @@ def GenerateFeatures(users,table="StandardUsers"):
 
     categories = GetUserCategory(table)
 
-    for i in range(len(locations)):
-        location_dic[locations[i]] = i
-    for i in range(len(categories)):
-        category_dic[categories[i]] = i
     for user in users:
-        features.append((user.fratio,user.activity,user.influence,user.interest_tags.split(","),location_dic[user.location],category_dic[user.category],user.userid))
+        features.append((user.fratio,user.activity,user.influence,user.interest_tags.split(","),user.location,user.category,user.userid))
     return features
+
+# 获取原集中的领域分布
+def CategoriesDistribution(table="StandardUsers"):
+    conn,cursor = Connection()
+    cursor.execute("SELECT category,count(*) as number from %s group by category" % table)
+    datas = cursor.fetchall()
+    categories = {}
+    for data in datas:
+        categories[data['category']] = data['number']
+    cursor.execute("SELECT count(*) as number FROM %s" % table)
+    datas = cursor.fetchall()
+    for data in datas:
+        total_number = data['number']
+    Close(conn,cursor)
+    for category in categories.keys():
+        categories[category] = categories[category] * 1.0 / total_number
+    return categories
 
 # 前三个特征需要归一化:采用z-score标准化
 def Normalized(features):
