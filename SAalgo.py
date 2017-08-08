@@ -9,6 +9,7 @@ import Distance as dist
 import Metric as metric
 import GreedyAlgorithm as greedy
 import Queue
+import copy
 
 class SAalgo:
     def __init__(self,k,features,categories,epsilon,neighbour,init_temper,dec):
@@ -56,21 +57,30 @@ class SAalgo:
                 for id in tuples:
                     if dist.distance(self.features[id],self.features[profile]) <= self.neighbour:
                         neighbours.put(id)
-
                 # 对其领域进行判断
                 while not neighbours.empty():
                     to_check = neighbours.get()
-                    old_loss = metric.AttributeLoss(self.features,current_profiles,self.features[profile][5])
-                    current_profiles.remove(profile)
-                    current_profiles.add(to_check)
-                    new_loss = metric.AttributeLoss(self.features,current_profiles,self.features[profile][5])
+                    old_loss = metric.AttributeLoss(self.features,current_profiles)
+                    new_profiles = copy.deepcopy(current_profiles)
+                    new_profiles.remove(profile)
+                    new_profiles.add(to_check)
+                    new_loss = metric.AttributeLoss(self.features,new_profiles)
                     delta = new_loss - old_loss
+                    print old_loss
+                    print new_loss
                     flag = self.accept(delta,self.temper)
-                    if not flag:
-                        current_profiles.remove(to_check)
-                        current_profiles.add(profile)
+                    if flag and metric.checkOneTypical(self.features,to_check,new_profiles,self.epsilon):
+                        current_profiles = new_profiles
+                        break
             self.temper *= self.dec
         return list(current_profiles)
+
+def test():
+    method = SAalgo(20,datapre.Features(),datapre.CategoriesDistribution(),0.05,2,1000,0.9)
+    profiles = method.Search()
+    print "Attribute Loss is"
+    print metric.AttributeLoss(method.features,profiles)
+test()
 
 
 
