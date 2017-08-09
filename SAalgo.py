@@ -33,7 +33,8 @@ class SAalgo:
         if delta < 0:
             return True
         else:
-            return random.randint(1,100) <= math.exp((-delta) * 1.0 / temper) * 100
+            # return random.randint(1,100) <= math.exp((-delta) * 1.0 / temper) * 100
+            return False
 
     def Search(self):
         # 将人物按领域分类
@@ -47,6 +48,8 @@ class SAalgo:
         # 初始解(贪心算法获得)
         method = greedy.Greedy(self.k,self.features,self.categories,self.epsilon)
         current_profiles = set(method.Search())
+        best_profiles = copy.deepcopy(current_profiles)
+        least_loss = metric.AttributeLoss(self.features,current_profiles)
 
         while self.temper > 0.1:
             # 开始迭代搜索解,对于领域解S,如果S优于当前解则接受领域解,否则以一定概率接受(如此避免了局部最优)
@@ -55,8 +58,9 @@ class SAalgo:
                 neighbours = Queue.Queue()
                 tuples = people[self.features[profile][5]]
                 for id in tuples:
-                    if dist.distance(self.features[id],self.features[profile]) <= self.neighbour:
+                    if id not in current_profiles and dist.distance(self.features[id],self.features[profile]) <= self.neighbour:
                         neighbours.put(id)
+                print "有%d个邻居" % len(neighbours)
                 # 对其领域进行判断
                 while not neighbours.empty():
                     to_check = neighbours.get()
@@ -71,9 +75,15 @@ class SAalgo:
                     flag = self.accept(delta,self.temper)
                     if flag and metric.checkOneTypical(self.features,to_check,new_profiles,self.epsilon):
                         current_profiles = new_profiles
+                        if new_loss < least_loss:
+                            best_profiles = current_profiles
+                            least_loss = new_loss
                         break
+            if current_profiles == best_profiles:
+                # 没有改变
+                break
             self.temper *= self.dec
-        return list(current_profiles)
+        return list(best_profiles)
 
 def test():
     method = SAalgo(20,datapre.Features(),datapre.CategoriesDistribution(),0.05,2,1000,0.9)
@@ -81,11 +91,3 @@ def test():
     print "Attribute Loss is"
     print metric.AttributeLoss(method.features,profiles)
 test()
-
-
-
-
-
-
-
-
