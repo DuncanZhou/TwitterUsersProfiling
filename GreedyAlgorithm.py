@@ -97,6 +97,17 @@ class Greedy:
 
     # 递归替换非领域典型元素算法
     def SearchRecursion(self,start,current_profiles):
+        # 递归终止条件(已经)
+        if metric.checkAllTypical(self.features,current_profiles,self.epsilon):
+            # print "找到一个可行解"
+            if self.min_loss == 0 or metric.AttributeLoss(self.features,set(current_profiles)) < self.min_loss:
+                self.min_loss = metric.AttributeLoss(self.features,set(current_profiles))
+                self.best_profiles = set(current_profiles)
+            return
+        # 减枝
+        if metric.AttributeLoss(self.features,set(current_profiles)) > self.min_loss:
+            return
+
         i = start
         while i < len(current_profiles):
             old_element = current_profiles[i]
@@ -111,16 +122,6 @@ class Greedy:
                         current_profiles[i] = self.Replace(current_profiles[i],current_profiles)
                 else:
                     current_profiles[i] = self.Replace(current_profiles[i],current_profiles)
-                # print "第%d个元素,旧的元素为:" % i
-                # print old_element
-                # print "新的元素为:"
-                # print current_profiles[i]
-            if metric.checkAllTypical(self.features,current_profiles,self.epsilon):
-                # print "找到一个可行解"
-                if self.min_loss == 0 or metric.AttributeLoss(self.features,set(current_profiles)) < self.min_loss:
-                    self.min_loss = metric.AttributeLoss(self.features,set(current_profiles))
-                    self.best_profiles = set(current_profiles)
-                return
             #
             # print current_profiles
             # 继续向下寻找
@@ -206,8 +207,8 @@ def test():
     start_time = time.time()
     method = Greedy(30,datapre.Features(),datapre.CategoriesDistribution(),0.0499)
     # profiles = method.SearchWithoutConstraints()
-    # profiles = method.SearchWithConstraints()
-    profiles = method.SearchWithReplace()
+    profiles = method.SearchWithConstraints()
+    # profiles = method.SearchWithReplace()
     # print len(profiles)
     end_time = time.time()
     print "cost %f s" % (end_time - start_time)
