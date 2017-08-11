@@ -139,16 +139,20 @@ class Greedy:
     def Delete(self,profiles):
         # 遍历,如果将其排除,那么损耗将会多少,将排除后损失依然小的排除
         to_delete = len(profiles) - self.k
+        has_category = set()
         i = 0
         while i < to_delete:
             loss = {}
             for profile in profiles:
+                if self.features[profile][5] in has_category:
+                    continue
                 profiles.remove(profile)
                 loss[profile] = metric.AttributeLoss(self.features,profiles)
                 profiles.add(profile)
             # 对loss排个序,把损耗依然小的可以移除
             to_delete_id = (min(loss.items(),key=lambda dic:dic[1]))[0]
             profiles.remove(to_delete_id)
+            has_category.add(self.features[to_delete_id][5])
             i += 1
         return profiles
 
@@ -207,8 +211,8 @@ def test():
     start_time = time.time()
     method = Greedy(30,datapre.Features(),datapre.CategoriesDistribution(),0.0499)
     # profiles = method.SearchWithoutConstraints()
-    profiles = method.SearchWithConstraints()
-    # profiles = method.SearchWithReplace()
+    # profiles = method.SearchWithConstraints()
+    profiles = method.SearchWithReplace()
     # print len(profiles)
     end_time = time.time()
     print "cost %f s" % (end_time - start_time)
