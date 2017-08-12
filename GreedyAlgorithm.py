@@ -98,14 +98,14 @@ class Greedy:
                     if id not in profiles:
                         profiles.add(id)
                         if category not in category_loss.keys():
-                            result[id] = metric.AttributeLossByDomain(self.features, profiles,category)
+                            result[id] = -metric.AttributeLossByDomain(self.features, profiles,category)
                         else:
                             result[id] = metric.AttributeLossByDomain(self.features,profiles,category) - category_loss[category]
                         profiles.remove(id)
                 results[(min(result.items(),key=lambda key:key[1]))[0]] = (min(result.items(),key=lambda key:key[1]))[1]
 
             to_add = (min(results.items(),key=lambda key:key[1]))[0]
-            print self.features[to_add][5]
+            # print self.features[to_add][5]
             # 检查该领域有没有超出人数限制
             number = 0
             category = self.features[to_add][5]
@@ -115,11 +115,13 @@ class Greedy:
             if number < ((int)(self.k * self.categories[category]) + 1):
                 # 可以加入
                 profiles.add(to_add)
+                print self.features[to_add][5]
                 category_loss[category] = metric.AttributeLossByDomain(self.features,profiles,category)
                 count += 1
-                if number + 1 == ((int)(self.k * self.categories[category]) + 1):
-                    has_category.add(self.features[to_add][5])
-            print count
+            else:
+                # 该领域不能再加入元素了
+                has_category.add(self.features[to_add][5])
+            # print count
         return profiles
 
     # 对非典型的元素进行替换
@@ -140,45 +142,90 @@ class Greedy:
         # print new_element
         return new_element
 
+    # 新的替换方案
+    def GraphReplace(self,profiles):
+        pass
+
+    # 在边集合中删除与点相关的边
+    @staticmethod
+    def DeleteEdges(edges,vertex):
+        newedges = copy.deepcopy(edges)
+        for edge in edges:
+            if edge[0] == vertex:
+                newedges.remove(edge)
+        return newedges
+
+    # 检查在边集合中还是否有与vertex相连的边
+    @staticmethod
+    def CheckEdgeCase1(edges,vertex):
+        for edge in edges:
+            if edge[1] == vertex or edge[0] == vertex:
+                return False
+        return True
+
+    # 检查是否有其他元素与其相连着
+    @staticmethod
+    def CheckEdgeCase2(edges,vertex):
+        for edge in edges:
+            if edge[1] == vertex:
+                # 有相连
+                return True
+        return False
+
     # 递归替换非领域典型元素算法
-    def SearchRecursion(self,start,current_profiles):
-        # print "running"
+    def SearchRecursion(self,index,current_profiles,noneTypical,edges):
         # 递归终止条件(已经)
         if metric.checkAllTypical(self.features,current_profiles,self.epsilon):
             # print "找到一个可行解"
             if self.min_loss == 0 or metric.AttributeLoss(self.features,set(current_profiles)) < self.min_loss:
                 self.min_loss = metric.AttributeLoss(self.features,set(current_profiles))
                 self.best_profiles = set(current_profiles)
+                # print self.best_profiles
                 print self.min_loss
-            return True
+            return
         # 不是典型,而最小的损耗已经大于最小损耗,不必再向下搜索了
-        if self.min_loss != 0 and metric.AttributeLoss(self.features,set(current_profiles)) > self.min_loss:
-            return True
+        if index == len(noneTypical) or (self.min_loss != 0 and metric.AttributeLoss(self.features,set(current_profiles)) > self.min_loss):
+            return
 
-        i = start
-        while i < len(current_profiles):
-            # print old_element
-            # 如果非典型就替换该元素
-            if not metric.checkOneTypical(self.features,current_profiles[i],set(current_profiles),self.epsilon):
-                new_profiles = copy.deepcopy(current_profiles)
-                # 先在已经计算过的字典中去寻找
-                if current_profiles[i] in self.replace.keys() and metric.checkOneTypical(self.features,current_profiles[i],new_profiles,self.epsilon):
-                    new_profiles[i] = self.replace[current_profiles[i]]
-                else:
-                    new_profiles[i] = self.Replace(current_profiles[i],new_profiles)
-                # 继续向下寻找
-                flag = self.SearchRecursion(i + 1,new_profiles)
-                if flag == True:
-                    # 已无需向下搜索
-                    break
-            #
-            # print current_profiles
+        # 三种情况,不替换,替换,可替换可不替换
 
-            # print self.min_loss
-            # 如果被替换了,还替换回来
-            # 继续搜索
-            i += 1
-        return False
+        i = noneTypical[index]
+        # 第一种情况
+        if self.CheckEdgeCase1(edges,i) == True:
+            # 不替换
+            self.SearchRecursion(index + 1,current_profiles,noneTypical,edges)
+
+        elif self.CheckEdgeCase2(edges,i) == True:
+            # 替换
+            new_profiles = copy.deepcopy(current_profiles)
+            # 先在已经计算过的字典中去寻找
+            if current_profiles[i] in self.replace.keys() and metric.checkOneTypical(self.features,current_profiles[i],new_profiles,self.epsilon):
+                new_profiles[i] = self.replace[current_profiles[i]]
+            else:
+                new_profiles[i] = self.Replace(current_profiles[i],new_profiles)
+
+            # 删除edges中与i相关的边
+            newedges = self.DeleteEdges(edges,i)
+            # 替换后继续向下寻找
+            self.SearchRecursion(index + 1,new_profiles,noneTypical,newedges)
+        else:
+            # 替换或不替换
+            # 替换
+            new_profiles = copy.deepcopy(current_profiles)
+            # 先在已经计算过的字典中去寻找
+            if current_profiles[i] in self.replace.keys() and metric.checkOneTypical(self.features,current_profiles[i],new_profiles,self.epsilon):
+                new_profiles[i] = self.replace[current_profiles[i]]
+            else:
+                new_profiles[i] = self.Replace(current_profiles[i],new_profiles)
+
+            # 删除edges中与i相关的边
+            newedges = self.DeleteEdges(edges,i)
+            # print len(newedges)
+            # 替换后继续向下寻找
+            self.SearchRecursion(index + 1,new_profiles,noneTypical,newedges)
+            # 不替换继续向下寻找
+            self.SearchRecursion(index + 1,current_profiles,noneTypical,edges)
+        return
 
 
     # 删除多出来的用户
@@ -207,12 +254,50 @@ class Greedy:
         # 第一步,在没有领域典型的条件得到的贪心最优值
         current_profiles = self.SearchWithoutConstraints()
         # self.best_profiles = self.SearchWithK()
-        # print len(self.best_profiles)
+        # print metric.AttributeLoss(self.features,self.best_profiles)
+
         # 贪心排除多余的
         self.best_profiles = self.Delete(set(current_profiles))
+        # print self.best_profiles
+
+        # 统计一下每个领域的人数
+        categories = {}
+        for category in self.categories.keys():
+            for profile in self.best_profiles:
+                if self.features[profile][5] == category:
+                    if category not in categories.keys():
+                        categories[category] = 1
+                    else:
+                        categories[category] += 1
+        print categories
 
         # 第二步,排除不够典型的,统计贪心算法求得的解中有哪些不够典型的
-        self.SearchRecursion(0,list(self.best_profiles))
+        # 将best_profiles中不够典型的元素求出
+        best_profiles = list(self.best_profiles)
+        # vertexs = set()
+        # # 顶点替换代价
+        # vertexs_cost = {}
+        edges = []
+        i = 0
+        while i < len(best_profiles):
+            j = i + 1
+            while j < len(best_profiles):
+                if metric.Similarity(self.features,best_profiles[i],best_profiles[j]) > self.epsilon:
+                    edges.append((i,j))
+                    # vertexs.add(i)
+                    # vertexs.add(j)
+                j += 1
+            i += 1
+        print len(edges)
+        # # 计算每个点替换的代价
+        # for vertex in vertexs:
+        #     pass
+        NoneTypical = []
+        for profile in best_profiles:
+            if not metric.checkOneTypical(self.features,profile,best_profiles,self.epsilon):
+                NoneTypical.append(best_profiles.index(profile))
+        print NoneTypical
+        self.SearchRecursion(0,best_profiles,NoneTypical,edges)
 
         return self.best_profiles
 
@@ -265,6 +350,7 @@ def test():
     print "cost %f s" % (end_time - start_time)
     print "Attribute Loss is"
     print metric.AttributeLoss(method.features,profiles)
+    print profiles
 
 test()
 
