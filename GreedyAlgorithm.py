@@ -172,6 +172,16 @@ class Greedy:
                 return True
         return False
 
+    # 统计集合中每个领域相应的人数
+    def DomainDistribution(self,profiles):
+        categories = {}
+        for profile in profiles:
+            if self.features[profile][5] not in categories.keys():
+                categories[self.features[profile][5]] = 1
+            else:
+                categories[self.features[profile][5]] += 1
+        return categories
+
     # 递归替换非领域典型元素算法
     def SearchRecursion(self,index,current_profiles,noneTypical,edges):
         # 递归终止条件(已经)
@@ -184,7 +194,7 @@ class Greedy:
                 print self.min_loss
             return
         # 不是典型,而最小的损耗已经大于最小损耗,不必再向下搜索了
-        if index == len(noneTypical) or (self.min_loss != 0 and metric.AttributeLoss(self.features,set(current_profiles)) > self.min_loss):
+        if index == len(noneTypical):
             return
 
         # 三种情况,不替换,替换,可替换可不替换
@@ -230,7 +240,9 @@ class Greedy:
 
     # 删除多出来的用户
     def Delete(self,profiles):
-        # 遍历,如果将其排除,那么损耗将会多少,将排除后损失依然小的排除
+        # 先统计每个领域的人数,用以统计该领域是否能被减少人数
+        categories = self.DomainDistribution(profiles)
+        # 遍历,如果将其排除,那么损耗将会减少多少,将排除后损失依然小的排除
         to_delete = len(profiles) - self.k
         has_category = set()
         i = 0
@@ -242,41 +254,40 @@ class Greedy:
                 profiles.remove(profile)
                 loss[profile] = metric.AttributeLoss(self.features,profiles)
                 profiles.add(profile)
-            # 对loss排个序,把损耗依然小的可以移除
+            # 对loss排个序,把损耗依然小的且可以移除的移除
             to_delete_id = (min(loss.items(),key=lambda dic:dic[1]))[0]
-            profiles.remove(to_delete_id)
             has_category.add(self.features[to_delete_id][5])
-            i += 1
+            # 判断是否能删除
+            if categories[self.features[to_delete_id][5]] == int(self.categories[self.features[to_delete_id][5]] * self.k) + 1:
+                profiles.remove(to_delete_id)
+                i += 1
         return profiles
 
     # 先不管典型贪心寻找,然后在进行替换寻找最优值
     def SearchWithReplace(self):
         # 第一步,在没有领域典型的条件得到的贪心最优值
         current_profiles = self.SearchWithoutConstraints()
+        print metric.AttributeLoss(self.features,set(current_profiles))
         # self.best_profiles = self.SearchWithK()
         # print metric.AttributeLoss(self.features,self.best_profiles)
 
         # 贪心排除多余的
         self.best_profiles = self.Delete(set(current_profiles))
-        # print self.best_profiles
 
         # 统计一下每个领域的人数
-        categories = {}
-        for category in self.categories.keys():
-            for profile in self.best_profiles:
-                if self.features[profile][5] == category:
-                    if category not in categories.keys():
-                        categories[category] = 1
-                    else:
-                        categories[category] += 1
-        print categories
+        # categories = self.DomainDistribution(self.best_profiles)
 
         # 第二步,排除不够典型的,统计贪心算法求得的解中有哪些不够典型的
         # 将best_profiles中不够典型的元素求出
         best_profiles = list(self.best_profiles)
+        # 直接贪心搜索到的解的损耗是
+        print "直接贪心搜索到的解的损耗是"
+        print metric.AttributeLoss(self.features,self.best_profiles)
         # vertexs = set()
         # # 顶点替换代价
         # vertexs_cost = {}
+        # 不够典型的点的编号
+        NoneTypical = []
         edges = []
         i = 0
         while i < len(best_profiles):
@@ -284,20 +295,13 @@ class Greedy:
             while j < len(best_profiles):
                 if metric.Similarity(self.features,best_profiles[i],best_profiles[j]) > self.epsilon:
                     edges.append((i,j))
-                    # vertexs.add(i)
-                    # vertexs.add(j)
                 j += 1
             i += 1
-        print len(edges)
-        # # 计算每个点替换的代价
-        # for vertex in vertexs:
-        #     pass
-        NoneTypical = []
         for profile in best_profiles:
-            if not metric.checkOneTypical(self.features,profile,best_profiles,self.epsilon):
+            if not metric.checkOneTypical(self.features,profile,self.best_profiles,self.epsilon):
                 NoneTypical.append(best_profiles.index(profile))
         print NoneTypical
-        self.SearchRecursion(0,best_profiles,NoneTypical,edges)
+        self.SearchRecursion(0,best_profiles,list(NoneTypical),edges)
 
         return self.best_profiles
 
@@ -341,10 +345,10 @@ class Greedy:
 
 def test():
     start_time = time.time()
-    method = Greedy(30,datapre.Features(),datapre.CategoriesDistribution(),0.0499)
+    method = Greedy(40,datapre.Features(),datapre.CategoriesDistribution(),0.0499)
     # profiles = method.SearchWithoutConstraints()
-    profiles = method.SearchWithConstraints()
-    # profiles = method.SearchWithReplace()
+    # profiles = method.SearchWithConstraints()
+    profiles = method.SearchWithReplace()
     # print len(profiles)
     end_time = time.time()
     print "cost %f s" % (end_time - start_time)
@@ -353,7 +357,3 @@ def test():
     print profiles
 
 test()
-
-
-
-
