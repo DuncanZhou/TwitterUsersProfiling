@@ -6,6 +6,8 @@ import MySQLdb
 import MySQLdb.cursors
 import numpy as np
 import Distance
+import random
+
 # 每个样本的格式[Followers/Following,Activity,Influence,Interests_tags,location,category]
 class TwitterUser:
     def __init__(self,userid,fratio,activity,influence,interest_tags,location,category):
@@ -155,15 +157,15 @@ def Initial(features,k):
     :param k: 随机初始化k个向量
     :return: 返回
     '''
+    ids = features.keys()
+    number = len(ids)
     # 随机选择k个作为初始均值向量(使得选择的种子包含了所有的类别
     k_seeds = set()
-    i = 0
     while len(k_seeds) < k:
-        for key in features.keys():
-            if features[key][5] == (i % k) and key not in k_seeds:
-                k_seeds.add(key)
-                break
-        i += 1
+        id = random.randint(0,number)
+        key = ids[id]
+        if key not in k_seeds:
+            k_seeds.add(key)
     print "%d个种子已选好" % k
     return k_seeds
 
@@ -175,8 +177,7 @@ def find_key(dict,value):
     return None
 
 # 将人物按领域分类
-def People():
-    features = Features()
+def People(features):
     # 将人物按领域分类
     people = {}
     for key in features.keys():
@@ -185,6 +186,23 @@ def People():
         else:
             people[features[key][5]].append(key)
     return people
+
+# 根据id构建字典
+def FeaturesById(profiles,features):
+    people = {}
+    for profile in profiles:
+        people[profile] = features[profile]
+    return people
+
+# 统计profiles集合中每个领域相应的人数
+def DomainDistribution(profiles,features):
+    categories = {}
+    for profile in profiles:
+        if features[profile][5] not in categories.keys():
+            categories[features[profile][5]] = 1
+        else:
+            categories[features[profile][5]] += 1
+    return categories
 
 # 测试距离
 def test():

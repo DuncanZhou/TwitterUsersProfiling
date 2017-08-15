@@ -47,11 +47,12 @@ class Greedy:
     def SearchWithoutConstraints(self):
         # 每次并入使得目标函数最小化
         profiles = set()
+        people = datapre.People(self.features)
         for category in self.categories.keys():
             # p_number为该领域需要的人数
             p_number = (int)(self.k * self.categories[category]) + 1
             # tuples为该领域所有的人
-            tuples = [id for id in self.features.keys() if self.features[id][5] == category]
+            tuples = people[category]
             # 迭代p_number次
             count = 0
             while count < p_number:
@@ -116,7 +117,7 @@ class Greedy:
     # 对非典型的元素进行替换
     def Replace(self,target,profiles):
         # people为每个领域的用户集合
-        people = datapre.People()
+        people = datapre.People(self.features)
         # 对target进行替换(在其所属领域寻找满足领域典型的,同样使用贪心算法)
         index = profiles.index(target)
         old_element = profiles[index]
@@ -163,12 +164,7 @@ class Greedy:
 
     # 统计集合中每个领域相应的人数
     def DomainDistribution(self,profiles):
-        categories = {}
-        for profile in profiles:
-            if self.features[profile][5] not in categories.keys():
-                categories[self.features[profile][5]] = 1
-            else:
-                categories[self.features[profile][5]] += 1
+        categories = datapre.DomainDistribution(profiles,self.features)
         return categories
 
     # 递归替换非领域典型元素算法
@@ -296,12 +292,12 @@ class Greedy:
 
     # 贪心寻找(考虑了领域典型条件,边贪心寻找,边判断条件)
     def SearchWithConstraints(self):
-        people = self.People()
+        people = datapre.People(self.features)
         # 每次并入使得目标函数最小化
         profiles = set()
         for category in self.categories.keys():
             # p_number为该领域需要的人数
-            p_number = (int)(self.k * self.categories[category]) + 1
+            p_number = int(self.k * self.categories[category]) + 1
             # tuples为该领域所有的人
             tuples = people[category]
             # 迭代p_number次

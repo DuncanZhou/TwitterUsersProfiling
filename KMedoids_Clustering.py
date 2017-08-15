@@ -145,6 +145,38 @@ class KMedoids:
                 i += 1
         return profiles
 
+    # 从聚类好的聚类簇中替换不满足要求的元素
+    def Replace(self,profiles,cluster):
+        '''
+
+        :param profiles: 完成的中心点
+        :param cluster: 字典形式的,以profiles为key,聚类簇value为列表格式
+        :return: 返回替换好的profiles
+        '''
+        # 替换过程用离medoids最近的且满足要求的元素来替换
+        new_profiles = profiles
+        for profile in profiles:
+            if not metric.checkOneTypical(self.features,profile,new_profiles,self.epsilon):
+                new_profiles.remove(profile)
+                # 对profile进行替换,在cluster[profile]寻找距离profile最近,且满足条件的来替换
+                results = {}
+                for element in cluster[profile]:
+                    results[element] = dist.distance(self.features[element],self.features[profile])
+                results = sorted(results.items(),key=lambda key:key[1])
+                flag = False
+                # 在results中找到距离profile最近,且满足领域典型要求的元素
+                for key in results.keys():
+                    if metric.checkOneTypical(self.features,key,new_profiles,self.epsilon):
+                        new_profiles.add(key)
+                        cluster[key] = cluster[profile]
+                        cluster.pop(profile)
+                        flag = True
+                        break
+                # 没找到领域典型的,需要在原集中取出这部分元素,重新聚类
+                if flag == False:
+                    pass
+        return new_profiles
+
     # 聚类结束
     def Search(self):
         profiles = set()
@@ -164,13 +196,15 @@ class KMedoids:
         print "开始删除"
         # 删除多出来的
         profiles = self.Delete(profiles)
-        print metric.AttributeLoss(self.features,profiles)
-        return medoids_clusters,profiles
+        profiles = self.Replace(profiles,medoids_clusters)
+        return profiles
+
 
 
 def test():
     method = KMedoids(30,datapre.CategoriesDistribution(),0.499)
-    cluster,profiles = method.Search()
+    profiles = method.Search()
+    print metric.AttributeLoss(datapre.Features(),profiles)
 test()
 
 
