@@ -8,6 +8,7 @@
 import DataPrepare as datapre
 import Distance as dist
 import Metric as metric
+import time
 
 class KMedoidsCluster:
     def __init__(self,k,datasets):
@@ -202,9 +203,12 @@ class KMedoids:
 
 
 def test():
+    start_time = time.time()
     method = KMedoids(30,datapre.CategoriesDistribution(),0.499)
     profiles = method.Search()
+    end_time = time.time()
     print metric.AttributeLoss(datapre.Features(),profiles)
+    print "cost %f s" % (end_time - start_time)
 test()
 
 
