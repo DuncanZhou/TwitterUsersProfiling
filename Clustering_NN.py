@@ -4,7 +4,7 @@
 
 import DataPrepare as datapre
 import EM_Clustering as em
-import KMediods_Clustering as kmediods
+import KMedoids_Clustering as kmediods
 import Distance as dist
 import Metric as metric
 

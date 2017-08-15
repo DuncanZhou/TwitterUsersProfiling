@@ -43,17 +43,6 @@ class Greedy:
         id_dists = sorted(id_dist.items(),key=lambda key:key[1])
         return id_dists
 
-    # 将人物按领域分类
-    def People(self):
-        # 将人物按领域分类
-        people = {}
-        for key in self.features.keys():
-            if self.features[key][5] not in people.keys():
-                people[self.features[key][5]] = [key]
-            else:
-                people[self.features[key][5]].append(key)
-        return people
-
     # 贪心寻找,暂不管领域典型条件
     def SearchWithoutConstraints(self):
         # 每次并入使得目标函数最小化
@@ -81,7 +70,7 @@ class Greedy:
 
     # 贪心算法保证k个情况
     def SearchWithK(self):
-        people = self.People()
+        people = datapre.People()
         profiles = set()
         has_category = set()
         category_loss = {}
@@ -127,7 +116,7 @@ class Greedy:
     # 对非典型的元素进行替换
     def Replace(self,target,profiles):
         # people为每个领域的用户集合
-        people = self.People()
+        people = datapre.People()
         # 对target进行替换(在其所属领域寻找满足领域典型的,同样使用贪心算法)
         index = profiles.index(target)
         old_element = profiles[index]

@@ -16,6 +16,16 @@ Sampling_Number = 1000
 def sigmoid(x):
     return 1 * 1.0 / (1 + math.exp(-x))
 
+# 领域属性特征损耗
+def AttributeLossByDomain(original_features,profiles,domain):
+    original_domain = [id for id in original_features.keys() if original_features[id][5] == domain]
+    profile_domain = [id for id in profiles if original_features[id][5] == domain]
+    loss = 0
+    for key in original_domain:
+        results = [dist.distance(original_features[key],original_features[u]) for u in profile_domain]
+        loss += min(results)
+    return loss
+
 #  属性特征损耗
 def AttributeLoss(origin_features,profiles):
     loss = 0
@@ -86,8 +96,28 @@ def Dissimilarity(origin_features,profiles):
 
     return total_similarity / (len(categories) - 1)
 
+# 相似性
+def Similarity(original_features,u,v):
+    disatance = dist.distance(original_features[u],original_features[v])
+    similarity = 2 * sigmoid(1.0 / disatance) - 1
+    return similarity
+
+# 检查代表性子集中的单个元素是否满足领域代表性
+def checkOneTypical(original_features,target,profiles,epsilon):
+    categories = set([original_features[key][5] for key in profiles])
+    categories = categories - set([original_features[target][5]])
+    for category in categories:
+        list = [Similarity(original_features,target,u) for u in profiles if original_features[u][5] == category]
+        # 代表性子集中某个领域没有,继续判断
+        if len(list) == 0:
+            continue
+        if max(list) > epsilon:
+            # print max(list)
+            return False
+    return True
+
 # 检查代表性子集中任意两个领域的相似性是否超出某个阈值
-def checkTypical(origin_features,profiles,epsilon):
+def checkAllTypical(origin_features,profiles,epsilon):
     '''
 
     :param origin_features: 原始数据集
@@ -95,32 +125,9 @@ def checkTypical(origin_features,profiles,epsilon):
     :param epsilon: 阈值
     :return:
     '''
-    # 先将所有人分类
-    categories = {}
-    for key in profiles:
-        if origin_features[key][5] not in categories.keys():
-            list = [key]
-            categories[origin_features[key][5]] = list
-        else:
-            categories[origin_features[key][5]].append(key)
-
-    # 只有一个领域的用户
-    if len(categories) == 1:
-        return 1
-
-    for key1 in categories.keys():
-        targets = categories[key1]
-        for key2 in categories.keys():
-            if key2 != key1:
-                other = categories[key2]
-                # 在target和other中寻找距离最小的值
-                minimals = []
-                for id1 in targets:
-                    minimals.append(min([dist.distance(origin_features[id1],origin_features[id2]) for id2 in other]))
-                similarity = 2 * sigmoid(1.0 / min(minimals)) - 1
-                print similarity
-                if similarity > epsilon:
-                    return False
+    for profile in profiles:
+        if checkOneTypical(origin_features,profile,profiles,epsilon) == False:
+            return False
     return True
 
 # 抽样选取最大和最小距离

@@ -174,6 +174,18 @@ def find_key(dict,value):
             return key
     return None
 
+# 将人物按领域分类
+def People():
+    features = Features()
+    # 将人物按领域分类
+    people = {}
+    for key in features.keys():
+        if features[key][5] not in people.keys():
+            people[features[key][5]] = [key]
+        else:
+            people[features[key][5]].append(key)
+    return people
+
 # 测试距离
 def test():
     table = "StandardUsers"

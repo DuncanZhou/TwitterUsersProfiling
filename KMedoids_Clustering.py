@@ -6,17 +6,18 @@
 # 寻找在聚类簇中距离之差之和最小的作为最新质点.同时,因为这样,该算法的复杂度高于k-means
 
 import DataPrepare as datapre
+import GreedyAlgorithm as greedy
 import Distance as dist
-import math
+import Metric as metric
 
-class KMediodsCluster:
-    def __init__(self):
+class KMedoidsCluster:
+    def __init__(self,k):
         # 全局变量,特征向量集
         self.features = datapre.Features()
-        # 定义迭代次数
+        # 定义最大迭代次数
         self.Max_iteration = 100
         # 定义聚类簇个数
-        self.k_min = 9
+        self.k_min = k
 
     # 计算质点到其聚类簇中其它点的距离之和
     def CalcDistance(self,clusters,point):
@@ -40,6 +41,17 @@ class KMediodsCluster:
                 min = self.CalcDistance(clusters,i)
                 min_id = i
         return min_id
+
+    # 将人物按领域分类
+    def People(self):
+        # 将人物按领域分类
+        people = {}
+        for key in self.features.keys():
+            if self.features[key][5] not in people.keys():
+                people[self.features[key][5]] = [key]
+            else:
+                people[self.features[key][5]].append(key)
+        return people
 
     # 聚类
     def Cluster(self):
@@ -89,9 +101,18 @@ class KMediodsCluster:
             iteration += 1
             print "迭代%d次" % iteration
 
-        s_current = {}
-        for seed in k_seeds:
-            s_current[seed] = self.features[seed]
+        return cluster,k_seeds
 
-        return cluster,s_current
+    # 聚类结束
+    def Search(self):
+        # 对每个领域聚类
+        people =
+
+
+
+def test():
+    method = KMedoidsCluster()
+    cluster,profiles = method.Cluster()
+    print metric.AttributeLoss(datapre.Features(),profiles)
+
 
