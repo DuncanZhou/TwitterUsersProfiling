@@ -8,6 +8,7 @@
 import DataPrepare as datapre
 import Distance as dist
 import Metric as metric
+import copy
 import time
 
 class KMedoidsCluster:
@@ -154,28 +155,60 @@ class KMedoids:
         :param cluster: 字典形式的,以profiles为key,聚类簇value为列表格式
         :return: 返回替换好的profiles
         '''
+        iteration = True
         # 替换过程用离medoids最近的且满足要求的元素来替换
-        new_profiles = profiles
-        for profile in profiles:
-            if not metric.checkOneTypical(self.features,profile,new_profiles,self.epsilon):
-                new_profiles.remove(profile)
-                # 对profile进行替换,在cluster[profile]寻找距离profile最近,且满足条件的来替换
-                results = {}
-                for element in cluster[profile]:
-                    results[element] = dist.distance(self.features[element],self.features[profile])
-                results = sorted(results.items(),key=lambda key:key[1])
-                flag = False
-                # 在results中找到距离profile最近,且满足领域典型要求的元素
-                for key in results.keys():
-                    if metric.checkOneTypical(self.features,key,new_profiles,self.epsilon):
-                        new_profiles.add(key)
-                        cluster[key] = cluster[profile]
-                        cluster.pop(profile)
-                        flag = True
-                        break
-                # 没找到领域典型的,需要在原集中取出这部分元素,重新聚类
-                if flag == False:
-                    pass
+
+        while True:
+            new_profiles = copy.deepcopy(profiles)
+            for profile in profiles:
+                if not metric.checkOneTypical(self.features,profile,new_profiles,self.epsilon):
+                    new_profiles.remove(profile)
+                    # 对profile进行替换,在cluster[profile]寻找距离profile最近,且满足条件的来替换
+                    results = {}
+                    for element in cluster[profile]:
+                        results[element] = dist.distance(self.features[element],self.features[profile])
+                    results = sorted(results.items(),key=lambda key:key[1])
+                    flag = False
+                    # 在results中找到距离profile最近,且满足领域典型要求的元素
+                    for key in results.keys():
+                        if metric.checkOneTypical(self.features,key,new_profiles,self.epsilon):
+                            new_profiles.add(key)
+                            cluster[key] = cluster[profile]
+                            cluster.pop(profile)
+                            flag = True
+                            break
+                    # 没找到领域典型的,需要在该领域的原集中去除这部分元素,重新聚类
+                    if flag == False:
+                        iteration = False
+                        # 对该领域去除这部分元素后,重新寻找k个聚类簇
+                        category = self.features[profiles][5]
+                        for profile in profiles:
+                            if self.features[profile][5] == category:
+                                new_profiles.remove(profile)
+                        # 获取该领域的人物集合
+                        tuples = datapre.People(self.features)[category]
+                        # 去除cluster[profile]这部分元素
+                        for element in tuples:
+                            if element in set(cluster[profile]):
+                                tuples.remove(element)
+                        number = 0
+                        for profile in profiles:
+                            if self.features[profile][5] == category:
+                                number += 1
+                        # 重新对tuples聚类
+                        method = KMedoidsCluster(number,datapre.FeaturesById(tuples,self.features))
+                        clusters,medoids = method.Cluster()
+                        for key in clusters.keys():
+                            cluster[key] = clusters[key]
+                        for element in medoids:
+                            new_profiles.add(element)
+                        # 此时new_profiles是最新的,继续向下替换
+
+            if iteration == True:
+                break
+            else:
+                profiles = new_profiles
+
         return new_profiles
 
     # 聚类结束
@@ -197,6 +230,7 @@ class KMedoids:
         print "开始删除"
         # 删除多出来的
         profiles = self.Delete(profiles)
+        print "开始替换"
         profiles = self.Replace(profiles,medoids_clusters)
         return profiles
 

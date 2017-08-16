@@ -39,7 +39,7 @@ class SAalgo:
     # 删除多出来的用户
     def Delete(self,profiles):
         # 先统计每个领域的人数,用以统计该领域是否能被减少人数
-        categories = self.DomainDistribution(profiles)
+        categories = datapre.DomainDistribution(profiles,self.features)
         # 遍历,如果将其排除,那么损耗将会减少多少,将排除后损失依然小的排除
         to_delete = len(profiles) - self.k
         has_category = set()
@@ -97,7 +97,7 @@ class SAalgo:
         if len(profiles) > self.k:
             profiles = self.Delete(profiles)
         # print len(profiles)
-        return list(profiles)
+        return profiles
 
     def Search(self):
         # 将人物按领域分类

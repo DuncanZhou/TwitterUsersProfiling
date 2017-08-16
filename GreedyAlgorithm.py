@@ -290,44 +290,6 @@ class Greedy:
 
         return self.best_profiles
 
-    # 贪心寻找(考虑了领域典型条件,边贪心寻找,边判断条件)
-    def SearchWithConstraints(self):
-        people = datapre.People(self.features)
-        # 每次并入使得目标函数最小化
-        profiles = set()
-        for category in self.categories.keys():
-            # p_number为该领域需要的人数
-            p_number = int(self.k * self.categories[category]) + 1
-            # tuples为该领域所有的人
-            tuples = people[category]
-            # 迭代p_number次
-            count = 0
-            has_checked = set()
-            while count < p_number:
-                results = {}
-                for id in tuples:
-                    if id not in has_checked:
-                        profiles.add(id)
-                        results[id] = metric.AttributeLossByDomain(self.features,list(profiles),category)
-                        profiles.remove(id)
-                # 将最小的id加入到profiles中
-                to_add = (min(results.items(),key=lambda key:key[1]))[0]
-                has_checked.add(to_add)
-                # 检查是否领域典型约束
-                flag = metric.checkOneTypical(self.features,to_add,profiles,self.epsilon)
-                if flag:
-                    profiles.add(to_add)
-                    count += 1
-                else:
-                    # print "拒绝"
-                    pass
-
-        # 删除多出来的用户
-        if len(profiles) > self.k:
-            profiles = self.Delete(profiles)
-        # print len(profiles)
-        return list(profiles)
-
 def test():
     start_time = time.time()
     method = Greedy(40,datapre.Features(),datapre.CategoriesDistribution(),0.0499)
