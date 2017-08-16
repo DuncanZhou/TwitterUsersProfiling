@@ -7,7 +7,6 @@ import math
 import random
 import Distance as dist
 import Metric as metric
-import GreedyAlgorithm as greedy
 import Queue
 import copy
 
@@ -37,18 +36,75 @@ class SAalgo:
             return math.exp(-delta * 1.0 / temper) > random.random()
             # return False
 
+    # 删除多出来的用户
+    def Delete(self,profiles):
+        # 先统计每个领域的人数,用以统计该领域是否能被减少人数
+        categories = self.DomainDistribution(profiles)
+        # 遍历,如果将其排除,那么损耗将会减少多少,将排除后损失依然小的排除
+        to_delete = len(profiles) - self.k
+        has_category = set()
+        i = 0
+        while i < to_delete:
+            loss = {}
+            for profile in profiles:
+                if self.features[profile][5] in has_category:
+                    continue
+                profiles.remove(profile)
+                loss[profile] = metric.AttributeLoss(self.features,profiles)
+                profiles.add(profile)
+            # 对loss排个序,把损耗依然小的且可以移除的移除
+            to_delete_id = (min(loss.items(),key=lambda dic:dic[1]))[0]
+            has_category.add(self.features[to_delete_id][5])
+            # 判断是否能删除
+            if categories[self.features[to_delete_id][5]] == int(self.categories[self.features[to_delete_id][5]] * self.k) + 1:
+                profiles.remove(to_delete_id)
+                i += 1
+        return profiles
+
+    # 退火算法初始解由随机产生或者贪心产生
+    def Greedy(self):
+        people = datapre.People(self.features)
+        # 每次并入使得目标函数最小化
+        profiles = set()
+        for category in self.categories.keys():
+            # p_number为该领域需要的人数
+            p_number = int(self.k * self.categories[category]) + 1
+            # tuples为该领域所有的人
+            tuples = people[category]
+            # 迭代p_number次
+            count = 0
+            has_checked = set()
+            while count < p_number:
+                results = {}
+                for id in tuples:
+                    if id not in has_checked:
+                        profiles.add(id)
+                        results[id] = metric.AttributeLossByDomain(self.features,list(profiles),category)
+                        profiles.remove(id)
+                # 将最小的id加入到profiles中
+                to_add = (min(results.items(),key=lambda key:key[1]))[0]
+                has_checked.add(to_add)
+                # 检查是否领域典型约束
+                flag = metric.checkOneTypical(self.features,to_add,profiles,self.epsilon)
+                if flag:
+                    profiles.add(to_add)
+                    count += 1
+                else:
+                    # print "拒绝"
+                    pass
+
+        # 删除多出来的用户
+        if len(profiles) > self.k:
+            profiles = self.Delete(profiles)
+        # print len(profiles)
+        return list(profiles)
+
     def Search(self):
         # 将人物按领域分类
-        people = {}
-        for key in self.features.keys():
-            if self.features[key][5] not in people.keys():
-                people[self.features[key][5]] = [key]
-            else:
-                people[self.features[key][5]].append(key)
+        people = datapre.People(self.features)
 
         # 初始解(贪心算法获得)
-        method = greedy.Greedy(self.k,self.features,self.categories,self.epsilon)
-        current_profiles = set(method.Search())
+        current_profiles = self.Greedy()
 
         while self.temper > 1.1:
             change = False
