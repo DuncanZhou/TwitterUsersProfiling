@@ -7,6 +7,7 @@ import MySQLdb.cursors
 import numpy as np
 import Distance
 import random
+import csv
 
 # 每个样本的格式[Followers/Following,Activity,Influence,Interests_tags,location,category]
 class TwitterUser:
@@ -23,11 +24,11 @@ class TwitterUser:
 # 数据库连接
 def Connection():
     conn = MySQLdb.connect(
-        host= "localhost",
+        host= "192.168.131.191",
         port = 3306,
-        user= "root",
+        user= "duncan",
         passwd= "123",
-        db = "TwitterUserInfo",
+        db = "twitter_users",
         # 以字典形式返回结果
         cursorclass = MySQLdb.cursors.DictCursor,
     )
@@ -46,7 +47,7 @@ def GetUserFeature(userid,table="StandardUsers"):
     conn,cursor = Connection()
     cursor.execute("SELECT * FROM %s where userid = '%s'" % (table,userid))
     data = cursor.fetchall()
-    twitter_user = TwitterUser(data[0]['userid'],data[0]['followers_count'] * 1.0 / data[0]['friends_count'],data[0]['activity'],data[0]['influenceScore'],data[0]['interest_tags'],data[0]['time_zone'],data[0]['category'])
+    twitter_user = TwitterUser(data[0]['user_id'],data[0]['followers_count'] * 1.0 / data[0]['friends_count'],data[0]['activity'],data[0]['influence_score'],data[0]['interest_tags'],data[0]['time_zone'],data[0]['category'])
     Close(conn,cursor)
     return twitter_user
 
@@ -61,7 +62,7 @@ def GetUsersFeature(table="StandardUsers"):
             fratio = data['followers_count'] * 1.0 / 1
         else:
             fratio = data['followers_count'] * 1.0 / data['friends_count']
-        twitter_user = TwitterUser(data['userid'],fratio,data['activity'],data['influenceScore'],data['interest_tags'],data['time_zone'],data['category'])
+        twitter_user = TwitterUser(data['user_id'],fratio,data['activity'],data['influence_score'],data['interest_tags'],data['time_zone'],data['category'])
         users.append(twitter_user)
     Close(conn,cursor)
     return users
@@ -89,14 +90,11 @@ def GetUserCategory(table="StandardUsers"):
     return categories
 
 # 构造字典形式的特征向量全集
-def GenerateFeatures(users,table="StandardUsers"):
+def GenerateFeatures(users):
     '''
     :param users: 用户全集
     '''
     features = []
-    locations = GetUserLocation(table)
-
-    categories = GetUserCategory(table)
 
     for user in users:
         features.append((user.fratio,user.activity,user.influence,user.interest_tags.split(","),user.location,user.category,user.userid))
@@ -204,15 +202,28 @@ def DomainDistribution(profiles,features):
             categories[features[profile][5]] += 1
     return categories
 
+
+# 为存入neo4j做准备
+
+def Write2CSV(users,path):
+    # 将所有的用户作为节点,存入CSV文件中
+    with open(path,'wb') as csvfile:
+        count = 0
+        writer = csv.writer(csvfile)
+        # 写入CSV文件的标题
+        writer.writerow(['userid','fratio','activity','influence','interest_tags','location','category'])
+        twitter_users = []
+        for user in users:
+            temp = (user.userid,user.fratio,user.activity,user.influence,user.interest_tags,user.location,user.category)
+            twitter_users.append(temp)
+            count += 1
+        writer.writerows(twitter_users)
+        csvfile.close()
+        print "共计写入%d个用户" % count
+
 # 测试距离
 def test():
     table = "StandardUsers"
-    dist = 0
-    features = Features(table)
-    for key1 in features.keys():
-        for key2 in features.keys():
-            dist += Distance.distance(features[key1],features[key2])
-    n = len(features.keys())
-    print dist / (n * (n - 1) / 2)
+    Write2CSV(GetUsersFeature(),'/home/duncan/10w_users.csv')
 
-# test()
+test()
