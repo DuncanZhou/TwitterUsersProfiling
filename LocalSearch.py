@@ -6,34 +6,62 @@ import DataPrepare as datapre
 import Distance as dist
 import Metric as metric
 import Queue
+import random
 
 # 用局部搜索算法
 
 class LocalSearch:
-    def __init__(self):
+    def __init__(self,categories,epsilon):
         # 定义领域范围
-        self.neighbour = 0.5
+        self.neighbour = 2
         # 定义全局特征向量集
         self.features = datapre.Features()
         # 定义最小代表性向量个数
         self.k_min = 9
+        # 每个领域的分布
+        self.categories = categories
+        # 领域典型的阈值
+        self.epsilon = epsilon
+
+    # 初始化
+    def Initial(self):
+        results = set()
+        # 在每个领域内都随机选一个
+        people = datapre.People(self.features)
+        for category in self.categories.keys():
+            flag = False
+            while not flag:
+                tuples = people[category]
+                # 从tuples中随机拿一个出来
+                to_add = tuples[random.randint(0,len(tuples))]
+                if metric.checkOneTypical(self.features,to_add,results,self.epsilon):
+                    results.add(to_add)
+                    flag = True
+        return results
 
     def Search(self):
+        people = datapre.People(self.features)
         # 随即初始化k_min个向量作为初始代表性向量
-        k_seeds = datapre.Initial(self.features,self.k_min)
+        k_seeds = self.Initial()
+        print len(k_seeds)
         has_checked = set()
         queue_set = set()
         s_current = {}
         for seed in k_seeds:
             s_current[seed] = self.features[seed]
             has_checked.add(seed)
-        Loss_current = metric.metric(self.features,s_current)
+        Loss_current = metric.AttributeLoss(self.features,s_current)
+        # 对每个领域进行添加
+
+
+
         # 初始化邻居队列
         Q = Queue.Queue()
         for seed in k_seeds:
-            for key in self.features.keys():
+            # 在和seed相同领域内寻找其邻居加入搜索
+            for key in people[self.features[seed][5]]:
                 # 该向量没有被检查过且属于该邻居
-                if key not in has_checked and dist.distance(self.features[seed],self.features[key]) <= self.neighbour:
+                if key not in has_checked and dist.distance(self.features[seed],self.features[key]) <= self.neighbour and metric.checkOneTypical(self.features,key,k_seeds,self.epsilon):
                     Q.put((key,seed))
                     queue_set.add(key)
         while not Q.empty():
