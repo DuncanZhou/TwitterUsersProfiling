@@ -29,11 +29,11 @@ class SAalgo:
     # accept函数
     @staticmethod
     def accept(delta,temper):
-        if delta < 0:
+        if delta > 0:
             return True
         else:
-            print math.exp(-delta * 1.0 / temper)
-            return math.exp(-delta * 1.0 / temper) > random.random()
+            print math.exp(delta * 1.0 / temper)
+            return math.exp(delta * 1.0 / temper) > random.random()
             # return False
 
     # 删除多出来的用户
@@ -45,15 +45,15 @@ class SAalgo:
         has_category = set()
         i = 0
         while i < to_delete:
-            loss = {}
+            repre = {}
             for profile in profiles:
                 if self.features[profile][5] in has_category:
                     continue
                 profiles.remove(profile)
-                loss[profile] = metric.AttributeLoss(self.features,profiles)
+                repre[profile] = metric.AttributeRepresentative(self.features,profiles)
                 profiles.add(profile)
-            # 对loss排个序,把损耗依然小的且可以移除的移除
-            to_delete_id = (min(loss.items(),key=lambda dic:dic[1]))[0]
+            # 对loss排个序,把代表性依然大的且可以移除的移除
+            to_delete_id = (max(repre.items(),key=lambda dic:dic[1]))[0]
             has_category.add(self.features[to_delete_id][5])
             # 判断是否能删除
             if categories[self.features[to_delete_id][5]] == int(self.categories[self.features[to_delete_id][5]] * self.k) + 1:
@@ -79,10 +79,10 @@ class SAalgo:
                 for id in tuples:
                     if id not in has_checked:
                         profiles.add(id)
-                        results[id] = metric.AttributeLossByDomain(self.features,list(profiles),category)
+                        results[id] = metric.AttributeRepresentativeByDomain(self.features,list(profiles),category)
                         profiles.remove(id)
                 # 将最小的id加入到profiles中
-                to_add = (min(results.items(),key=lambda key:key[1]))[0]
+                to_add = (max(results.items(),key=lambda key:key[1]))[0]
                 has_checked.add(to_add)
                 # 检查是否领域典型约束
                 flag = metric.checkOneTypical(self.features,to_add,profiles,self.epsilon)
@@ -122,9 +122,9 @@ class SAalgo:
                 # 对其领域进行判断
                 while not neighbours.empty():
                     to_check = neighbours.get()
-                    old_loss = metric.AttributeLoss(self.features,current_profiles)
+                    old_loss = metric.AttributeRepresentative(self.features,current_profiles)
                     new_profiles.add(to_check)
-                    new_loss = metric.AttributeLoss(self.features,new_profiles)
+                    new_loss = metric.AttributeRepresentative(self.features,new_profiles)
                     delta = new_loss - old_loss
                     # print old_loss
                     # print new_loss
@@ -144,5 +144,5 @@ def test():
     method = SAalgo(20,datapre.Features(),datapre.CategoriesDistribution(),0.05,0.5,10,0.9)
     profiles = method.Search()
     print "Attribute Loss is"
-    print metric.AttributeLoss(method.features,profiles)
+    print metric.AttributeRepresentative(method.features,profiles)
 test()
