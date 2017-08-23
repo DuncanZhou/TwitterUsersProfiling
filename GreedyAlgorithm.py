@@ -24,8 +24,8 @@ class Greedy:
         self.epsilon = epsilon
         # 最优代表性子集
         self.best_profiles = set()
-        # 最小的损耗
-        self.min_loss = 0
+        # 最大的代表性
+        self.max_repre = 0
         # 记录每个领域内按照目标函数值从小到大排序
         self.replace = {}
 
@@ -60,59 +60,59 @@ class Greedy:
                 for id in tuples:
                     if id not in profiles:
                         profiles.add(id)
-                        results[id] = metric.AttributeLossByDomain(self.features,list(profiles),category)
+                        results[id] = metric.AttributeRepresentativeByDomain(self.features,list(profiles),category)
                         profiles.remove(id)
-                # 将最小的id加入到profiles中
-                to_add = (min(results.items(),key=lambda key:key[1]))[0]
+                # 将代表性最大的id加入到profiles中
+                to_add = (max(results.items(),key=lambda key:key[1]))[0]
                 profiles.add(to_add)
                 count += 1
         # print len(profiles)
         return list(profiles)
 
     # 贪心算法保证k个情况
-    def SearchWithK(self):
-        people = datapre.People()
-        profiles = set()
-        has_category = set()
-        category_loss = {}
-        count = 0
-        while count < self.k:
-            results = {}
-            for category in self.categories.keys():
-                if category in has_category:
-                    continue
-                result = {}
-                # tuples为该领域所有的人
-                tuples = people[category]
-                for id in tuples:
-                    if id not in profiles:
-                        profiles.add(id)
-                        if category not in category_loss.keys():
-                            result[id] = -metric.AttributeLossByDomain(self.features, profiles,category)
-                        else:
-                            result[id] = metric.AttributeLossByDomain(self.features,profiles,category) - category_loss[category]
-                        profiles.remove(id)
-                results[(min(result.items(),key=lambda key:key[1]))[0]] = (min(result.items(),key=lambda key:key[1]))[1]
-
-            to_add = (min(results.items(),key=lambda key:key[1]))[0]
-            # print self.features[to_add][5]
-            # 检查该领域有没有超出人数限制
-            number = 0
-            category = self.features[to_add][5]
-            for profile in profiles:
-                if self.features[profile][5] == category:
-                    number += 1
-            if number < ((int)(self.k * self.categories[category]) + 1):
-                # 可以加入
-                profiles.add(to_add)
-                print self.features[to_add][5]
-                category_loss[category] = metric.AttributeLossByDomain(self.features,profiles,category)
-                count += 1
-            else:
-                # 该领域不能再加入元素了
-                has_category.add(self.features[to_add][5])
-            # print count
-        return profiles
+    # def SearchWithK(self):
+    #     people = datapre.People()
+    #     profiles = set()
+    #     has_category = set()
+    #     category_loss = {}
+    #     count = 0
+    #     while count < self.k:
+    #         results = {}
+    #         for category in self.categories.keys():
+    #             if category in has_category:
+    #                 continue
+    #             result = {}
+    #             # tuples为该领域所有的人
+    #             tuples = people[category]
+    #             for id in tuples:
+    #                 if id not in profiles:
+    #                     profiles.add(id)
+    #                     if category not in category_loss.keys():
+    #                         result[id] = -metric.AttributeLossByDomain(self.features, profiles,category)
+    #                     else:
+    #                         result[id] = metric.AttributeLossByDomain(self.features,profiles,category) - category_loss[category]
+    #                     profiles.remove(id)
+    #             results[(min(result.items(),key=lambda key:key[1]))[0]] = (min(result.items(),key=lambda key:key[1]))[1]
+    #
+    #         to_add = (min(results.items(),key=lambda key:key[1]))[0]
+    #         # print self.features[to_add][5]
+    #         # 检查该领域有没有超出人数限制
+    #         number = 0
+    #         category = self.features[to_add][5]
+    #         for profile in profiles:
+    #             if self.features[profile][5] == category:
+    #                 number += 1
+    #         if number < ((int)(self.k * self.categories[category]) + 1):
+    #             # 可以加入
+    #             profiles.add(to_add)
+    #             print self.features[to_add][5]
+    #             category_loss[category] = metric.AttributeLossByDomain(self.features,profiles,category)
+    #             count += 1
+    #         else:
+    #             # 该领域不能再加入元素了
+    #             has_category.add(self.features[to_add][5])
+    #         # print count
+    #     return profiles
 
     # 对非典型的元素进行替换
     def Replace(self,target,profiles):
@@ -125,16 +125,12 @@ class Greedy:
         for person in people[self.features[target][5]]:
             if person != target and person not in profiles and metric.checkOneTypical(self.features,person,profiles,self.epsilon):
                 profiles[index] = person
-                results[person] = metric.AttributeLossByDomain(self.features,set(profiles),self.features[target][5])
-        new_element = (min(results.items(),key=lambda key:key[1]))[0]
+                results[person] = metric.AttributeRepresentativeByDomain(self.features,set(profiles),self.features[target][5])
+        new_element = (max(results.items(),key=lambda key:key[1]))[0]
         self.replace[target] = new_element
         profiles[index] = old_element
         # print new_element
         return new_element
-
-    # 新的替换方案
-    def GraphReplace(self,profiles):
-        pass
 
     # 在边集合中删除与点相关的边
     @staticmethod
@@ -172,11 +168,11 @@ class Greedy:
         # 递归终止条件(已经)
         if metric.checkAllTypical(self.features,current_profiles,self.epsilon):
             # print "找到一个可行解"
-            if self.min_loss == 0 or metric.AttributeLoss(self.features,set(current_profiles)) < self.min_loss:
-                self.min_loss = metric.AttributeLoss(self.features,set(current_profiles))
+            if self.max_repre == 0 or metric.AttributeRepresentative(self.features,set(current_profiles)) > self.max_repre:
+                self.max_repre = metric.AttributeRepresentative(self.features,set(current_profiles))
                 self.best_profiles = set(current_profiles)
                 # print self.best_profiles
-                print self.min_loss
+                print self.max_repre
             return
         # 不是典型,而最小的损耗已经大于最小损耗,不必再向下搜索了
         if index == len(noneTypical):
@@ -232,15 +228,15 @@ class Greedy:
         has_category = set()
         i = 0
         while i < to_delete:
-            loss = {}
+            repre = {}
             for profile in profiles:
                 if self.features[profile][5] in has_category:
                     continue
                 profiles.remove(profile)
-                loss[profile] = metric.AttributeLoss(self.features,profiles)
+                repre[profile] = metric.AttributeRepresentative(self.features,profiles)
                 profiles.add(profile)
-            # 对loss排个序,把损耗依然小的且可以移除的移除
-            to_delete_id = (min(loss.items(),key=lambda dic:dic[1]))[0]
+            # 对loss排个序,把代表性依然大的且可以移除的移除
+            to_delete_id = (max(repre.items(),key=lambda dic:dic[1]))[0]
             has_category.add(self.features[to_delete_id][5])
             # 判断是否能删除
             if categories[self.features[to_delete_id][5]] == int(self.categories[self.features[to_delete_id][5]] * self.k) + 1:
@@ -252,7 +248,7 @@ class Greedy:
     def SearchWithReplace(self):
         # 第一步,在没有领域典型的条件得到的贪心最优值
         current_profiles = self.SearchWithoutConstraints()
-        print metric.AttributeLoss(self.features,set(current_profiles))
+        print metric.AttributeRepresentative(self.features,set(current_profiles))
         # self.best_profiles = self.SearchWithK()
         # print metric.AttributeLoss(self.features,self.best_profiles)
 
@@ -267,7 +263,7 @@ class Greedy:
         best_profiles = list(self.best_profiles)
         # 直接贪心搜索到的解的损耗是
         print "直接贪心搜索到的解的损耗是"
-        print metric.AttributeLoss(self.features,self.best_profiles)
+        print metric.AttributeRepresentative(self.features,self.best_profiles)
         # vertexs = set()
         # # 顶点替换代价
         # vertexs_cost = {}
@@ -299,8 +295,8 @@ def test():
     # print len(profiles)
     end_time = time.time()
     print "cost %f s" % (end_time - start_time)
-    print "Attribute Loss is"
-    print metric.AttributeLoss(method.features,profiles)
+    print "Attribute Representativeness is"
+    print metric.AttributeRepresentative(method.features,profiles)
     print profiles
 
 test()
