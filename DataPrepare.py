@@ -29,6 +29,12 @@ def Connection():
         user= "duncan",
         passwd= "123",
         db = "twitter_users",
+        # host= "127.0.0.1",
+        # port = 3306,
+        # user= "root",
+        # passwd= "123",
+        # db = "TwitterUserInfo",
+
         # 以字典形式返回结果
         cursorclass = MySQLdb.cursors.DictCursor,
     )
@@ -41,6 +47,18 @@ def Close(conn,cursor):
     cursor.close()
     conn.commit()
     conn.close()
+
+# 获取所有用户的id
+def GetUsersId(table="StandardUsers"):
+    # 结果以集合的方式返回
+    conn,cursor = Connection()
+    ids = set()
+    cursor.execute("SELECT * FROM %s" % table)
+    datas = cursor.fetchall()
+    for data in datas:
+        ids.add(data['user_id'])
+    Close(conn,cursor)
+    return ids
 
 # 获取用户的特征向量
 def GetUserFeature(userid,table="StandardUsers"):
@@ -157,10 +175,10 @@ def Initial(features,k):
     '''
     ids = features.keys()
     number = len(ids)
-    # 随机选择k个作为初始均值向量(使得选择的种子包含了所有的类别
+    # 随机选择k个作为初始向量
     k_seeds = set()
     while len(k_seeds) < k:
-        id = random.randint(0,number)
+        id = random.randint(0,number - 1)
         key = ids[id]
         if key not in k_seeds:
             k_seeds.add(key)
@@ -226,4 +244,4 @@ def test():
     table = "StandardUsers"
     Write2CSV(GetUsersFeature(),'/home/duncan/10w_users.csv')
 
-test()
+# test()
