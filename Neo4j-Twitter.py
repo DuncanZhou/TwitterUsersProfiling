@@ -69,13 +69,19 @@ def InsertFollowsFromFiles(path,total_users):
     # 先读取path下的文件名
     files = os.listdir(path)
     ids = map(lambda file:file.replace(".txt",""),files)
+    print "共计%d个用户" % len(ids)
     # 对每个id进行读取其follows的id,然后插入到neo-4j中
+    count = 0
     for id in ids:
         results = GetUserFollowing(path + "/" + id + ".txt",total_users)
-        print "插入%d条关系" % len(results)
+        print "需要插入%d条关系" % len(results)
         # 插入到图数据库中
         for result in results:
             InsertFollowsRel(id,result)
+            # print "插入%d条关系" % number
+        count += 1
+        print "共%d个用户,已完成%d个用户" % (len(ids),count)
+
 
 
 
@@ -96,8 +102,10 @@ if __name__ == '__main__':
     # 初始化操作,最开始执行一次,用于创建结点
     # DeleteNodesAndRels()
     # Initial()
+    # 根据id建立索引
+    # neo4j.IndexByID()
 
-    # users = datapre.GetUsersId()
-    InsertFollowsFromFiles("/home/duncan/friends/")
+    users = datapre.GetUsersId()
+    InsertFollowsFromFiles("/home/duncan/friends/",users)
     # 插入mysql中所有的关系
     # InsertRelsToNeoFromMysql()
