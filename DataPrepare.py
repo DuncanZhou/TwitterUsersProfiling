@@ -164,7 +164,7 @@ def Features(table="StandardUsers"):
     features = {}
     for feature in new_features:
         userid = feature[len(feature) - 1]
-        features[userid] = feature[:-1]
+        features[userid] = feature
     return features
 
 def Initial(features,k):

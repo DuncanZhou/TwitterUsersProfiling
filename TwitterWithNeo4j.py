@@ -79,11 +79,11 @@ def InsertFollowsRel(userid1,userid2):
         tx.success = True
     Close(driver,session)
 
-# 根据screen_name建立索引
-def IndexBySName():
+# 根据用户id建立索引
+def IndexByID():
     driver,session = Conn()
     # 创建索引语句
-    statement = "CREATE INDEX ON :TwitterUser(screen_name)"
+    statement = "CREATE INDEX ON :TwitterUser(userid)"
     with session.begin_transaction() as tx:
         tx.run(statement)
         tx.success = True
@@ -140,3 +140,18 @@ def DeleteAllNodesAndRels():
         tx.run(statement)
         tx.success = True
     Close(session,driver)
+
+# 查询v-[:follows]->u
+def CheckFollows(u,v):
+    driver,session = Conn()
+    statement = "MATCH (v:TwitterUser {userid:'%s'})-[:follows]->(u:TwitterUser {userid:'%s'}) RETURN count(*) as result" % (v,u)
+    # session运行带参
+    results = session.run(statement)
+    result = False
+    # 遍历结果集
+    for record in results:
+        if record['result'] == 1:
+            result = True
+        break
+    Close(session,driver)
+    return result

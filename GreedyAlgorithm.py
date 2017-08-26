@@ -294,9 +294,15 @@ def test():
     profiles = method.SearchWithReplace()
     # print len(profiles)
     end_time = time.time()
-    print "cost %f s" % (end_time - start_time)
-    print "Attribute Representativeness is"
-    print metric.AttributeRepresentative(method.features,profiles)
-    print profiles
+
+    # 将结果写入文件
+    with open("GB_results","wb") as f:
+        f.write("cost %f s" % (end_time - start_time))
+        f.write("\n")
+        f.write("Attribute Representativeness is:")
+        f.write(str(metric.AttributeRepresentative(method.features,profiles)))
+        f.write("\n")
+        for profile in profiles:
+            f.write(profile + "\t")
 
 test()

@@ -11,7 +11,7 @@ def LoadToCSV(path):
     users = datapre.GetUsersId()
     files = os.listdir(path)
     ids = map(lambda file:file.replace(".txt",""),files)
-    with open("/home/duncan/relationships.csv",mode="wb") as f:
+    with open("/home/duncan/all_relationships.csv",mode="wb") as f:
         # 写入csv的头
         f.write(":START_ID")
         f.write(",")
@@ -59,7 +59,24 @@ def LoadToCSV(path):
             count += 1
             print "finished %d users" % count
 
-LoadToCSV("/home/duncan/friends/")
+        db = client["1020relationships"]
+        infos = db["1020_friends"].find()
+        for info in infos:
+            id = info["_id"]
+            friends = info["friends"]
+            friends = set(map(lambda friend:str(friend),friends))
+            friends = friends & users
+            for friend in friends:
+                f.write(str(id))
+                f.write(",")
+                f.write(friend)
+                f.write(",")
+                f.write("follows")
+                f.write("\n")
+            count += 1
+            print "finished %d users" % count
+
+# LoadToCSV("/home/duncan/friends/")
 
 
 

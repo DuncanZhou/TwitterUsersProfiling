@@ -3,6 +3,7 @@
 '''@author:duncan'''
 
 import math
+import TwitterWithNeo4j as neo4j
 
 '''使用闵可夫斯基距离和VDM结合,对于用户的兴趣标签采用相似度的倒数来计算距离'''
 '''对于数值特征需要将其归一化'''
@@ -17,6 +18,9 @@ sigma = 1
 # 定义每个特征的权重
 weight = [0.16,0.21,0.26,0.16,0.21]
 # weight = [0.16,0.16,0.16,0.16,0.16,0.2]
+
+# 距离变小变量
+alpha = 0.8
 
 # 距离函数
 def distance(feature1,feature2):
@@ -38,6 +42,9 @@ def distance(feature1,feature2):
     else: part4 = 100
     # distance = math.exp(-1 * 1.0 / (2 * math.pow(sigma,2)) * math.pow(part1 + weight[3] * part2 + weight[4] * part3 + weight[5] * part4,1.0 / P))
     distance = math.pow(part1 + weight[3] * part2 + weight[4] * part3 + part4,1.0 / P)
+    # 非对称的距离函数,如果v follows u,那么u对v的距离降低
+    if neo4j.CheckFollows(feature2[6],feature1[6]) == True:
+        distance *= alpha
     return distance
 
 # def test():

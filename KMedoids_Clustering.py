@@ -20,25 +20,25 @@ class KMedoidsCluster:
         # 定义聚类簇个数
         self.k_min = k
 
-    # 计算质点到其聚类簇中其它点的距离之和
-    def CalcDistance(self,clusters,point):
+    # 计算质点到其聚类簇中其它点的代表性之和
+    def CalcRepre(self,clusters,point):
         '''
 
         :param cluster: cluster为聚类簇,为list类型
         :param point: 质点
-        :return: 距离绝对值之和
+        :return:
         '''
         sum = 0
         for seed in clusters:
-            sum += dist.distance(self.features[seed],self.features[point])
+            sum += metric.Repre(self.features[seed],self.features[point])
         return sum
 
-    # 选取新的质点
+    # 选取新的质点,代表性最大的作为新的质点
     def SelectNewMediod(self,clusters):
         results = {}
         for element in clusters:
-            results[element] = self.CalcDistance(clusters,element)
-        return (min(results.items(),key=lambda key:key[1]))[0]
+            results[element] = self.CalcRepre(clusters,element)
+        return (max(results.items(),key=lambda key:key[1]))[0]
 
     # 将人物按领域分类
     def People(self):
@@ -71,9 +71,9 @@ class KMedoidsCluster:
             for key in self.features.keys():
                 results = {}
                 for seed in k_seeds:
-                    results[seed] = dist.distance(self.features[seed],self.features[key])
+                    results[seed] = metric.Repre(self.features[seed],self.features[key])
                 # 距离k_seeds中的id最近,并入id聚类簇中
-                id = (min(results.items(),key=lambda key:key[1]))[0]
+                id = (max(results.items(),key=lambda key:key[1]))[0]
 
                 # # 计算样本与各均值向量距离,距离最近的向量划入相应的簇
                 # min = dist.distance(self.features[key],self.features[k_seeds[0]])
@@ -131,15 +131,15 @@ class KMedoids:
         has_category = set()
         i = 0
         while i < to_delete:
-            loss = {}
+            repre = {}
             for profile in profiles:
                 if self.features[profile][5] in has_category:
                     continue
                 profiles.remove(profile)
-                loss[profile] = metric.AttributeLoss(self.features,profiles)
+                repre[profile] = metric.AttributeRepresentative(self.features,profiles)
                 profiles.add(profile)
-            # 对loss排个序,把损耗依然小的且可以移除的移除
-            to_delete_id = (min(loss.items(),key=lambda dic:dic[1]))[0]
+            # 对loss排个序,把代表性依然大的且可以移除的移除
+            to_delete_id = (max(repre.items(),key=lambda dic:dic[1]))[0]
             has_category.add(self.features[to_delete_id][5])
             # 判断是否能删除
             if categories[self.features[to_delete_id][5]] == int(self.categories[self.features[to_delete_id][5]] * self.k) + 1:
@@ -163,14 +163,15 @@ class KMedoids:
             for profile in profiles:
                 if not metric.checkOneTypical(self.features,profile,new_profiles,self.epsilon):
                     new_profiles.remove(profile)
-                    # 对profile进行替换,在cluster[profile]寻找距离profile最近,且满足条件的来替换
+                    # 对profile进行替换,在cluster[profile]寻找profile对其代表性最大的元素,且满足条件的来替换
                     results = {}
                     for element in cluster[profile]:
-                        results[element] = dist.distance(self.features[element],self.features[profile])
-                    results = sorted(results.items(),key=lambda key:key[1])
+                        results[element] = metric.Repre(self.features[profile],self.features[element])
+                    results = sorted(results.items(),key=lambda key:key[1],reverse=True)
                     flag = False
-                    # 在results中找到距离profile最近,且满足领域典型要求的元素
-                    for key in results.keys():
+                    # 在results中找到profile最能代表的,且满足领域典型要求的元素
+                    for result in results:
+                        key = result[0]
                         if metric.checkOneTypical(self.features,key,new_profiles,self.epsilon):
                             new_profiles.add(key)
                             cluster[key] = cluster[profile]
@@ -238,10 +239,11 @@ class KMedoids:
 
 def test():
     start_time = time.time()
-    method = KMedoids(30,datapre.CategoriesDistribution(),0.499)
+    method = KMedoids(40,datapre.CategoriesDistribution(),0.0499)
     profiles = method.Search()
     end_time = time.time()
-    print metric.AttributeLoss(datapre.Features(),profiles)
+    print metric.AttributeRepresentative(datapre.Features(),profiles)
+    print profiles
     print "cost %f s" % (end_time - start_time)
 test()
 

@@ -17,7 +17,7 @@ def Repre(u,v):
     if u == v:
         return 1
     distance = dist.distance(u,v)
-    return 2*sigmoid(1 * 1.0 / distance) - 1
+    return 2*sigmoid(1.0 / distance) - 1
 
 # sigmoid函数,挤压函数
 def sigmoid(x):
@@ -180,7 +180,7 @@ def checkAllTypical(origin_features,profiles,epsilon):
 #     return max,min
 
 # 一共分为三个部分,属性损耗,分布损耗,代表性子集差异性
-maxn,minn = Sampling(datapre.Features())
+# maxn,minn = Sampling(datapre.Features())
 #　代表性子集的代表性衡量
 # def metric(origin_features,profiles):
 #     category_number = len(datapre.category_dic)

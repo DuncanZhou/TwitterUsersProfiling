@@ -143,6 +143,6 @@ class SAalgo:
 def test():
     method = SAalgo(20,datapre.Features(),datapre.CategoriesDistribution(),0.05,0.5,10,0.9)
     profiles = method.Search()
-    print "Attribute Loss is"
+    print "Attribute Representativeness is"
     print metric.AttributeRepresentative(method.features,profiles)
 test()
