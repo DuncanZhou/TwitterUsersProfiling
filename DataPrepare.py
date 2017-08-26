@@ -229,10 +229,10 @@ def Write2CSV(users,path):
         count = 0
         writer = csv.writer(csvfile)
         # 写入CSV文件的标题
-        writer.writerow(['userid','fratio','activity','influence','interest_tags','location','category'])
+        writer.writerow(['userid:ID','fratio','activity','influence','interest_tags','location','category',":LABEL"])
         twitter_users = []
         for user in users:
-            temp = (user.userid,user.fratio,user.activity,user.influence,user.interest_tags,user.location,user.category)
+            temp = (user.userid,user.fratio,user.activity,user.influence,user.interest_tags,user.location,user.category,"TwitterUser")
             twitter_users.append(temp)
             count += 1
         writer.writerows(twitter_users)
@@ -241,7 +241,6 @@ def Write2CSV(users,path):
 
 # 测试距离
 def test():
-    table = "StandardUsers"
-    Write2CSV(GetUsersFeature(),'/home/duncan/10w_users.csv')
+    Write2CSV(GetUsersFeature(),"/home/duncan/104071Users.csv")
 
 # test()

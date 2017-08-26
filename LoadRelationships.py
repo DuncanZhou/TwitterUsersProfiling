@@ -13,9 +13,11 @@ def LoadToCSV(path):
     ids = map(lambda file:file.replace(".txt",""),files)
     with open("/home/duncan/relationships.csv",mode="wb") as f:
         # 写入csv的头
-        f.write(":START_ID(userid)")
-        f.write(" ")
-        f.write(":END_ID(userid)")
+        f.write(":START_ID")
+        f.write(",")
+        f.write(":END_ID")
+        f.write(",")
+        f.write(":TYPE")
         f.write("\n")
         count = 0
         for id in ids:
@@ -28,8 +30,10 @@ def LoadToCSV(path):
             # 获取到该id所有的friends,写入到文件中
             for friend in friends:
                 f.write(id)
-                f.write(" ")
+                f.write(",")
                 f.write(friend)
+                f.write(",")
+                f.write("follows")
                 f.write("\n")
             count += 1
             print "finished %d users" % count
@@ -47,8 +51,10 @@ def LoadToCSV(path):
             friends = friends & users
             for friend in friends:
                 f.write(str(id))
-                f.write(" ")
+                f.write(",")
                 f.write(friend)
+                f.write(",")
+                f.write("follows")
                 f.write("\n")
             count += 1
             print "finished %d users" % count
