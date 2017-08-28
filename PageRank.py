@@ -13,11 +13,15 @@ class PageRank:
         self.features = features
 
     def GetUserMatrix(self):
-        userids = set(self.features.keys())
+        userids = self.features.keys()
+        # 将userids写入文件
+
         users_matrix = []
         iter = 0
+        # 连接neo4j
+        driver,session = neo4j.Conn()
         for id in userids:
-            followings = neo4j.GetFollowers(id)
+            followings = neo4j.GetFollowers(driver,session,id)
             userRow = []
             if len(followings) != 0:
                 for id1 in userids:
@@ -30,10 +34,17 @@ class PageRank:
                 userRow = [0 for i in range(len(userids))]
             iter += 1
             print iter
-            user_matrix = csr_matrix(userRow)
-            users_matrix.append(user_matrix)
+            users_matrix.append(userRow)
 
+        users_matrix = csr_matrix(users_matrix)
 
+        # 存储关系矩阵
+        save_file = open("uMatrix.pickle","wb")
+        pickle.dump(users_matrix,save_file)
+        save_file.close()
+
+        driver.close()
+        session.close()
         return users_matrix
 
     def PageRank(self,uMatrix,fMatrix,d,PRMatrix,threshold,iterationN):
@@ -44,11 +55,13 @@ class PageRank:
             # 将下面的公式转换一下
             newPRMatrix = []
             # NewPRMatrix = fMatrix + d * uMatrix * OldPRMatrix
+            count = 0
             for i in range(len(uMatrix)):
                 # 取uMatrix第i列
-                column = [matrix[0,i] for matrix in uMatrix]
-
+                column = uMatrix[:,i].T
                 newPRMatrix.append(double(column * OldPRMatrix * d + fMatrix[i,0]))
+                count += 1
+                print count
             # print newPRMatrix
             NewPRMatrix = mat(newPRMatrix).T
             flag = True
@@ -71,6 +84,11 @@ def test():
     method = PageRank(40,datapre.Features())
     # 获得出入度矩阵
     uMatrix = method.GetUserMatrix()
+
+    # open_file = open("/home/duncan/uMatrix.pickle")
+    # uMatrix = pickle.load(open_file)
+    # open_file.close()
+
     # 转移矩阵
     fMatrix = mat([(1 - 0.85) / len(method.features) for i in range(len(method.features))]).T
     # 初始矩阵
