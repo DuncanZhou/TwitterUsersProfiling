@@ -80,6 +80,22 @@ class PageRank:
         print "迭代次数%d" % iteration
         return NewPRMatrix
 
+    # 构造字典,读取PageRank结果,提取出影响力最大的前100位
+    def GetTop100Users(self,path):
+        open_file = open("PageRank_results.pickle")
+        PRMatrix = pickle.load(open_file)
+        open_file.close()
+        uPR = {}
+        user_ids = self.features.keys()
+        for i,id in zip(range(len(user_ids)),user_ids):
+            uPR[id] = PRMatrix[i]
+        # 对uPR排序
+        uPR = sorted(uPR.items(),key = lambda dic:dic[1],reverse=True)
+        # 将前100的用户写入文件
+        with open("InfluenceTop100","wb") as f:
+            for user in uPR[:100]:
+                f.write(user[0])
+                f.write("\n")
 
 def test():
     method = PageRank(40,datapre.Features())
@@ -102,4 +118,4 @@ def test():
     pickle.dump(result,save_file)
     save_file.close()
 
-test()
+# test()
