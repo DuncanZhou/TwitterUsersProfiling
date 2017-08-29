@@ -12,10 +12,13 @@ b = 50
 Sampling_Number = 1000
 # 一共分为三个部分,属性损耗,分布损耗,代表性子集差异性
 
+original_features = datapre.Features()
+people = datapre.People(original_features)
 # 计算一个结点对另一个节点的代表性
 def Repre(u,v):
     if u == v:
         return 1
+
     distance = dist.distance(u,v)
     return 2*sigmoid(1.0 / distance) - 1
 
@@ -24,44 +27,30 @@ def sigmoid(x):
     return 1 * 1.0 / (1 + math.exp(-x))
 
 # 某个具体领域代表性计算
-def AttributeRepresentativeByDomain(original_features,profiles,domain):
-    original_domain = [id for id in original_features.keys() if original_features[id][5] == domain]
+def AttributeRepresentativeByDomain(profiles,domain):
+    original_domain = people[domain]
     profile_domain = [id for id in profiles if original_features[id][5] == domain]
-    repre = 0
-    for key in original_domain:
-        results = [Repre(original_features[u],original_features[key]) for u in profile_domain]
-        # 选择最大代表性的元素
-        repre += max(results)
-    return repre
+    # repre = 0
+    # for key in original_domain:
+    #     repre += max(Repre(original_features[u],original_features[key]) for u in profile_domain)
+    repre = sum(max(Repre(original_features[u],original_features[key]) for u in profile_domain) for key in original_domain)
+    return repre + len(profile_domain)
 
 # 属性代表性
-def AttributeRepresentative(origin_features,profiles):
-    repre = 0
-    for key in origin_features.keys():
-        list = [Repre(origin_features[u],origin_features[key]) for u in profiles]
-        repre += max(list)
-    return repre
-
-# # 领域属性特征损耗
-# def AttributeLossByDomain(original_features,profiles,domain):
-#     original_domain = [id for id in original_features.keys() if original_features[id][5] == domain]
-#     profile_domain = [id for id in profiles if original_features[id][5] == domain]
-#     loss = 0
-#     for key in original_domain:
-#         results = [dist.distance(original_features[key],original_features[u]) for u in profile_domain]
-#         loss += min(results)
-#     return loss
-#
-# #  属性特征损耗
-# def AttributeLoss(origin_features,profiles):
-#     loss = 0
-#     for key in origin_features.keys():
-#         list = [dist.distance(origin_features[key],origin_features[u]) for u in profiles]
-#         loss += min(list)
-#     return loss
+def AttributeRepresentative(profiles):
+    # 分别在每个领域内计算代表性
+    # for category in categories:
+    #     tuples = people[category]
+    #     # 得到profiles中在这领域的代表性用户
+    #     profile_domain = [id for id in profiles if origin_features[id][5] == category]
+    #     if len(profile_domain) != 0:
+    #         repre += AttributeRepresentativeByDomain(origin_features,profile_domain,tuples,category)
+    # return repre
+    repre = sum(max(Repre(original_features[u],original_features[key]) for u in profiles) for key in original_features.keys())
+    return repre + len(profiles)
 
 # 领域分布损耗
-def DistributionLoss(original_features,profiles):
+def DistributionLoss(profiles):
     categories = {}
     for key in original_features.keys():
         if original_features[key][5] not in categories.keys():
@@ -91,15 +80,15 @@ def DistributionLoss(original_features,profiles):
     return math.sqrt(loss)
 
 # 子集内部差异性
-def Dissimilarity(origin_features,profiles):
+def Dissimilarity(profiles):
     # 先将所有人分类
     categories = {}
     for key in profiles:
-        if origin_features[key][5] not in categories.keys():
+        if original_features[key][5] not in categories.keys():
             list = [key]
-            categories[origin_features[key][5]] = list
+            categories[original_features[key][5]] = list
         else:
-            categories[origin_features[key][5]].append(key)
+            categories[original_features[key][5]].append(key)
 
     # 只有一个领域的用户
     if len(categories) == 1:
@@ -116,24 +105,24 @@ def Dissimilarity(origin_features,profiles):
                 # 在target和other中寻找距离最小的值
                 minimals = []
                 for id1 in targets:
-                    minimals.append(min([dist.distance(origin_features[id1],origin_features[id2]) for id2 in other]))
+                    minimals.append(min([dist.distance(original_features[id1],original_features[id2]) for id2 in other]))
                 similarity += 2 * sigmoid(1.0 / min(minimals)) - 1
-        total_similarity +=  similarity
+        total_similarity += similarity
 
     return total_similarity / (len(categories) - 1)
 
 # 相似性
-def Similarity(original_features,u,v):
+def Similarity(u,v):
     disatance = dist.distance(original_features[u],original_features[v])
     similarity = 2 * sigmoid(1.0 / disatance) - 1
     return similarity
 
 # 检查代表性子集中的单个元素是否满足领域代表性
-def checkOneTypical(original_features,target,profiles,epsilon):
+def checkOneTypical(target,profiles,epsilon):
     categories = set([original_features[key][5] for key in profiles])
     categories = categories - set([original_features[target][5]])
     for category in categories:
-        list = [Similarity(original_features,target,u) for u in profiles if original_features[u][5] == category]
+        list = [Similarity(target,u) for u in profiles if original_features[u][5] == category]
         # 代表性子集中某个领域没有,继续判断
         if len(list) == 0:
             continue
@@ -143,7 +132,7 @@ def checkOneTypical(original_features,target,profiles,epsilon):
     return True
 
 # 检查代表性子集中任意两个领域的相似性是否超出某个阈值
-def checkAllTypical(origin_features,profiles,epsilon):
+def checkAllTypical(profiles,epsilon):
     '''
 
     :param origin_features: 原始数据集
@@ -152,7 +141,7 @@ def checkAllTypical(origin_features,profiles,epsilon):
     :return:
     '''
     for profile in profiles:
-        if checkOneTypical(origin_features,profile,profiles,epsilon) == False:
+        if checkOneTypical(profile,profiles,epsilon) == False:
             return False
     return True
 

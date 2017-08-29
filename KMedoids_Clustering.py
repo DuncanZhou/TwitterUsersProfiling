@@ -136,7 +136,7 @@ class KMedoids:
                 if self.features[profile][5] in has_category:
                     continue
                 profiles.remove(profile)
-                repre[profile] = metric.AttributeRepresentative(self.features,profiles)
+                repre[profile] = metric.AttributeRepresentative(profiles)
                 profiles.add(profile)
             # 对loss排个序,把代表性依然大的且可以移除的移除
             to_delete_id = (max(repre.items(),key=lambda dic:dic[1]))[0]
@@ -161,7 +161,7 @@ class KMedoids:
         while True:
             new_profiles = copy.deepcopy(profiles)
             for profile in profiles:
-                if not metric.checkOneTypical(self.features,profile,new_profiles,self.epsilon):
+                if not metric.checkOneTypical(profile,new_profiles,self.epsilon):
                     new_profiles.remove(profile)
                     # 对profile进行替换,在cluster[profile]寻找profile对其代表性最大的元素,且满足条件的来替换
                     results = {}
@@ -172,7 +172,7 @@ class KMedoids:
                     # 在results中找到profile最能代表的,且满足领域典型要求的元素
                     for result in results:
                         key = result[0]
-                        if metric.checkOneTypical(self.features,key,new_profiles,self.epsilon):
+                        if metric.checkOneTypical(key,new_profiles,self.epsilon):
                             new_profiles.add(key)
                             cluster[key] = cluster[profile]
                             cluster.pop(profile)
@@ -238,13 +238,23 @@ class KMedoids:
 
 
 def test():
-    start_time = time.time()
-    method = KMedoids(40,datapre.CategoriesDistribution(),0.0499)
-    profiles = method.Search()
-    end_time = time.time()
-    print metric.AttributeRepresentative(datapre.Features(),profiles)
-    print profiles
-    print "cost %f s" % (end_time - start_time)
+    to_run = [40,60,80,100]
+    for i in to_run:
+        start_time = time.time()
+        method = KMedoids(i,datapre.CategoriesDistribution(),0.08)
+        profiles = method.Search()
+        end_time = time.time()
+        print metric.AttributeRepresentative(profiles)
+        print profiles
+        print "cost %f s" % (end_time - start_time)
+        with open("%dclustering_result" % i,"wb") as f:
+            f.write("cost %f s" % (end_time - start_time))
+            f.write("\n")
+            f.write("Attribute Representativeness is:")
+            f.write(str(metric.AttributeRepresentative(profiles)))
+            f.write("\n")
+            for profile in profiles:
+                f.write(profile + "\t")
 test()
 
 

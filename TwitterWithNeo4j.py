@@ -155,3 +155,25 @@ def CheckFollows(u,v):
         break
     Close(session,driver)
     return result
+
+# 获取某个用户的following
+def GetFollowings(driver,session,u):
+    followers = set()
+    statement = "match (u:TwitterUser {userid:'%s'})-[:follows]->(v:TwitterUser) return v.userid" % u
+    # session运行带参
+    results = session.run(statement)
+    # 遍历结果集
+    for record in results:
+        followers.add(record['v.userid'])
+    return followers
+
+# 获取某个用户的followers
+def GetFollowers(driver,session,u):
+    followers = set()
+    statement = "match (v:TwitterUser {userid:'%s'})-[:follows]->('%s':TwitterUser) return v.userid" % u
+    # session运行带参
+    results = session.run(statement)
+    # 遍历结果集
+    for record in results:
+        followers.add(record['v.userid'])
+    return followers

@@ -7,11 +7,12 @@ import DataPrepare as datapre
 import Metric as metric
 import time
 import copy
+from numpy import *
+import numpy as np
 
 class Greedy:
     def __init__(self,k,features,categories,epsilon):
         '''
-
         :param k: 共计需要寻找的代表性子集大小
         :param categories: 领域分布
         :param features: 全局特征集
@@ -48,27 +49,83 @@ class Greedy:
         # 每次并入使得目标函数最小化
         profiles = set()
         people = datapre.People(self.features)
+        print "数据集装载完毕"
         for category in self.categories.keys():
             # p_number为该领域需要的人数
             p_number = (int)(self.k * self.categories[category]) + 1
             # tuples为该领域所有的人
             tuples = people[category]
-            # 迭代p_number次
+
+            # 两重循环计算代表性矩阵
+            R = []
+            print len(tuples)
+            for id in tuples:
+                row = []
+                for id1 in tuples:
+                    row.append(metric.Repre(self.features[id],self.features[id1]))
+                R.append(row)
+            rowN = len(tuples)
+            results_vector = [0 for i in xrange(rowN)]
+            # 得到了代表性矩阵后
             count = 0
+            has = {}
             while count < p_number:
-                results = {}
-                for id in tuples:
-                    if id not in profiles:
-                        profiles.add(id)
-                        results[id] = metric.AttributeRepresentativeByDomain(self.features,list(profiles),category)
-                        profiles.remove(id)
-                # 将代表性最大的id加入到profiles中
+                results = {i:sum(max(x,y) for x,y in zip(R[i],results_vector)) for i in xrange(rowN) if i not in has}
                 to_add = (max(results.items(),key=lambda key:key[1]))[0]
-                profiles.add(to_add)
+                has[to_add] = tuples[to_add]
+                profiles.add(tuples[to_add])
+                # 更新
+                results_vector = [max(x,y) for x,y in zip(R[to_add],results_vector)]
                 count += 1
-        # print len(profiles)
+                print count
+            print len(has)
+            print len(profiles)
         return list(profiles)
 
+    # 删除多出来的用户
+    def Delete(self,profiles):
+        print "开始删除多余结点"
+        # 先统计每个领域的人数,用以统计该领域是否能被减少人数
+        categories = self.DomainDistribution(profiles)
+        # 遍历,如果将其排除,那么损耗将会减少多少,将排除后损失依然小的排除
+        to_delete = len(profiles) - self.k
+        has_category = set()
+        count = 0
+        while count < to_delete:
+        #
+        #     print len(has)
+        #     for i in has:
+        #         repre = {}
+        #         # 如果去掉profile,results_verctor等于剩余元素最大值
+        #         temp = set()
+        #         temp.add(i)
+        #         new_R = np.asarray([R[x] for x in (set(has.keys()) - temp)])
+        #         repre[i] = sum(np.max(new_R,axis=0))
+        #     # 对loss排个序,把代表性依然大的且可以移除的移除
+        #     to_delete_id = (max(repre.items(),key=lambda dic:dic[1]))[0]
+        #     has_category.add(self.features[has[to_delete_id]][5])
+        #     # 判断是否能删除
+        #     if categories[self.features[has[to_delete_id]][5]] == int(self.categories[self.features[has[to_delete_id]][5]] * self.k) + 1:
+        #         print "the number of profiles is %d" % len(profiles)
+        #         profiles.remove(has[to_delete_id])
+        #         has.pop(i)
+        #         count += 1
+            repre = {}
+            for profile in profiles:
+                if self.features[profile][5] in has_category:
+                    continue
+                profiles.remove(profile)
+                repre[profile] = metric.AttributeRepresentative(profiles)
+                profiles.add(profile)
+            # 对loss排个序,把代表性依然大的且可以移除的移除
+            to_delete_id = (max(repre.items(),key=lambda dic:dic[1]))[0]
+            has_category.add(self.features[to_delete_id][5])
+            # 判断是否能删除
+            if categories[self.features[to_delete_id][5]] == int(self.categories[self.features[to_delete_id][5]] * self.k) + 1:
+                print "the number of profiles is %d" % len(profiles)
+                profiles.remove(to_delete_id)
+                count += 1
+        return profiles
     # 贪心算法保证k个情况
     # def SearchWithK(self):
     #     people = datapre.People()
@@ -123,9 +180,9 @@ class Greedy:
         old_element = profiles[index]
         results = {}
         for person in people[self.features[target][5]]:
-            if person != target and person not in profiles and metric.checkOneTypical(self.features,person,profiles,self.epsilon):
+            if person != target and person not in profiles and metric.checkOneTypical(person,profiles,self.epsilon):
                 profiles[index] = person
-                results[person] = metric.AttributeRepresentativeByDomain(self.features,set(profiles),self.features[target][5])
+                results[person] = metric.AttributeRepresentativeByDomain(set(profiles),self.features[target][5])
         new_element = (max(results.items(),key=lambda key:key[1]))[0]
         self.replace[target] = new_element
         profiles[index] = old_element
@@ -166,10 +223,10 @@ class Greedy:
     # 递归替换非领域典型元素算法
     def SearchRecursion(self,index,current_profiles,noneTypical,edges):
         # 递归终止条件(已经)
-        if metric.checkAllTypical(self.features,current_profiles,self.epsilon):
+        if metric.checkAllTypical(current_profiles,self.epsilon):
             # print "找到一个可行解"
-            if self.max_repre == 0 or metric.AttributeRepresentative(self.features,set(current_profiles)) > self.max_repre:
-                self.max_repre = metric.AttributeRepresentative(self.features,set(current_profiles))
+            if self.max_repre == 0 or metric.AttributeRepresentative(set(current_profiles)) > self.max_repre:
+                self.max_repre = metric.AttributeRepresentative(set(current_profiles))
                 self.best_profiles = set(current_profiles)
                 # print self.best_profiles
                 print self.max_repre
@@ -204,7 +261,7 @@ class Greedy:
             # 替换
             new_profiles = copy.deepcopy(current_profiles)
             # 先在已经计算过的字典中去寻找
-            if current_profiles[i] in self.replace.keys() and metric.checkOneTypical(self.features,current_profiles[i],new_profiles,self.epsilon):
+            if current_profiles[i] in self.replace.keys() and metric.checkOneTypical(current_profiles[i],new_profiles,self.epsilon):
                 new_profiles[i] = self.replace[current_profiles[i]]
             else:
                 new_profiles[i] = self.Replace(current_profiles[i],new_profiles)
@@ -218,42 +275,16 @@ class Greedy:
             self.SearchRecursion(index + 1,current_profiles,noneTypical,edges)
         return
 
-
-    # 删除多出来的用户
-    def Delete(self,profiles):
-        # 先统计每个领域的人数,用以统计该领域是否能被减少人数
-        categories = self.DomainDistribution(profiles)
-        # 遍历,如果将其排除,那么损耗将会减少多少,将排除后损失依然小的排除
-        to_delete = len(profiles) - self.k
-        has_category = set()
-        i = 0
-        while i < to_delete:
-            repre = {}
-            for profile in profiles:
-                if self.features[profile][5] in has_category:
-                    continue
-                profiles.remove(profile)
-                repre[profile] = metric.AttributeRepresentative(self.features,profiles)
-                profiles.add(profile)
-            # 对loss排个序,把代表性依然大的且可以移除的移除
-            to_delete_id = (max(repre.items(),key=lambda dic:dic[1]))[0]
-            has_category.add(self.features[to_delete_id][5])
-            # 判断是否能删除
-            if categories[self.features[to_delete_id][5]] == int(self.categories[self.features[to_delete_id][5]] * self.k) + 1:
-                profiles.remove(to_delete_id)
-                i += 1
-        return profiles
-
     # 先不管典型贪心寻找,然后在进行替换寻找最优值
     def SearchWithReplace(self):
         # 第一步,在没有领域典型的条件得到的贪心最优值
-        current_profiles = self.SearchWithoutConstraints()
-        print metric.AttributeRepresentative(self.features,set(current_profiles))
+        current_profiles,R,has = self.SearchWithoutConstraints()
+        print metric.AttributeRepresentative(set(current_profiles))
         # self.best_profiles = self.SearchWithK()
         # print metric.AttributeLoss(self.features,self.best_profiles)
 
         # 贪心排除多余的
-        self.best_profiles = self.Delete(set(current_profiles))
+        self.best_profiles = self.Delete(set(current_profiles),R,has)
 
         # 统计一下每个领域的人数
         # categories = self.DomainDistribution(self.best_profiles)
@@ -262,8 +293,8 @@ class Greedy:
         # 将best_profiles中不够典型的元素求出
         best_profiles = list(self.best_profiles)
         # 直接贪心搜索到的解的损耗是
-        print "直接贪心搜索到的解的损耗是"
-        print metric.AttributeRepresentative(self.features,self.best_profiles)
+        print "直接贪心搜索到的解的属性代表性是"
+        print metric.AttributeRepresentative(self.best_profiles)
         # vertexs = set()
         # # 顶点替换代价
         # vertexs_cost = {}
@@ -274,35 +305,39 @@ class Greedy:
         while i < len(best_profiles):
             j = i + 1
             while j < len(best_profiles):
-                if metric.Similarity(self.features,best_profiles[i],best_profiles[j]) > self.epsilon:
+                if metric.Similarity(best_profiles[i],best_profiles[j]) > self.epsilon:
                     edges.append((i,j))
                 j += 1
             i += 1
         for profile in best_profiles:
-            if not metric.checkOneTypical(self.features,profile,self.best_profiles,self.epsilon):
+            if not metric.checkOneTypical(profile,self.best_profiles,self.epsilon):
                 NoneTypical.append(best_profiles.index(profile))
         print NoneTypical
+
+        print "开始替换不够领域典型的人物"
         self.SearchRecursion(0,best_profiles,list(NoneTypical),edges)
 
         return self.best_profiles
 
 def test():
-    start_time = time.time()
-    method = Greedy(40,datapre.Features(),datapre.CategoriesDistribution(),0.0499)
-    # profiles = method.SearchWithoutConstraints()
-    # profiles = method.SearchWithConstraints()
-    profiles = method.SearchWithReplace()
-    # print len(profiles)
-    end_time = time.time()
 
-    # 将结果写入文件
-    with open("GB_results","wb") as f:
-        f.write("cost %f s" % (end_time - start_time))
-        f.write("\n")
-        f.write("Attribute Representativeness is:")
-        f.write(str(metric.AttributeRepresentative(method.features,profiles)))
-        f.write("\n")
-        for profile in profiles:
-            f.write(profile + "\t")
+    to_run = [40,60,80,100]
+    for i in to_run:
+        start_time = time.time()
+        method = Greedy(i,datapre.Features(),datapre.CategoriesDistribution(),0.08)
+        # profiles = method.SearchWithoutConstraints()
+        # profiles = method.SearchWithConstraints()
+        profiles = method.SearchWithReplace()
+        # print len(profiles)
+        end_time = time.time()
 
+        # 将结果写入文件
+        with open("%dGB_results" % i,"wb") as f:
+            f.write("cost %f s" % (end_time - start_time))
+            f.write("\n")
+            f.write("Attribute Representativeness is:")
+            f.write(str(metric.AttributeRepresentative(profiles)))
+            f.write("\n")
+            for profile in profiles:
+                f.write(profile + "\t")
 test()

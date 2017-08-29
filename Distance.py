@@ -43,8 +43,8 @@ def distance(feature1,feature2):
     # distance = math.exp(-1 * 1.0 / (2 * math.pow(sigma,2)) * math.pow(part1 + weight[3] * part2 + weight[4] * part3 + weight[5] * part4,1.0 / P))
     distance = math.pow(part1 + weight[3] * part2 + weight[4] * part3 + part4,1.0 / P)
     # 非对称的距离函数,如果v follows u,那么u对v的距离降低
-    if neo4j.CheckFollows(feature2[6],feature1[6]) == True:
-        distance *= alpha
+    # if neo4j.CheckFollows(feature2[6],feature1[6]) == True:
+    #     distance *= alpha
     return distance
 
 # def test():

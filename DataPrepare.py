@@ -49,7 +49,7 @@ def Close(conn,cursor):
     conn.close()
 
 # 获取所有用户的id
-def GetUsersId(table="StandardUsers"):
+def GetUsersId(table="newStandardUsers"):
     # 结果以集合的方式返回
     conn,cursor = Connection()
     ids = set()
@@ -61,7 +61,7 @@ def GetUsersId(table="StandardUsers"):
     return ids
 
 # 获取用户的特征向量
-def GetUserFeature(userid,table="StandardUsers"):
+def GetUserFeature(userid,table="newStandardUsers"):
     conn,cursor = Connection()
     cursor.execute("SELECT * FROM %s where userid = '%s'" % (table,userid))
     data = cursor.fetchall()
@@ -70,7 +70,7 @@ def GetUserFeature(userid,table="StandardUsers"):
     return twitter_user
 
 # 获取所有用户的特征向量
-def GetUsersFeature(table="StandardUsers"):
+def GetUsersFeature(table="newStandardUsers"):
     conn,cursor = Connection()
     cursor.execute("SELECT * FROM %s" % table)
     datas = cursor.fetchall()
@@ -86,7 +86,7 @@ def GetUsersFeature(table="StandardUsers"):
     return users
 
 # 获取用户所有的时区,用来映射location属性
-def GetUserLocation(table="StandardUsers"):
+def GetUserLocation(table="newStandardUsers"):
     conn,cursor = Connection()
     cursor.execute("SELECT distinct(time_zone) FROM %s" % table)
     datas = cursor.fetchall()
@@ -97,7 +97,7 @@ def GetUserLocation(table="StandardUsers"):
     return location
 
 # 获取用户所有的类别,用来映射category属性
-def GetUserCategory(table="StandardUsers"):
+def GetUserCategory(table="newStandardUsers"):
     conn,cursor = Connection()
     cursor.execute("SELECT distinct(category) FROM %s" % table)
     datas = cursor.fetchall()
@@ -119,7 +119,7 @@ def GenerateFeatures(users):
     return features
 
 # 获取原集中的领域分布
-def CategoriesDistribution(table="StandardUsers"):
+def CategoriesDistribution(table="newStandardUsers"):
     conn,cursor = Connection()
     cursor.execute("SELECT category,count(*) as number from %s group by category" % table)
     datas = cursor.fetchall()
@@ -158,8 +158,9 @@ def Normalized(features):
     return new_features
 
 # 得到最终的特征全集
-def Features(table="StandardUsers"):
+def Features(table="newStandardUsers"):
     features = GenerateFeatures(GetUsersFeature(table))
+    # 归一化完成
     new_features = Normalized(features)
     features = {}
     for feature in new_features:

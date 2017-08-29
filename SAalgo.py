@@ -9,6 +9,7 @@ import Distance as dist
 import Metric as metric
 import Queue
 import copy
+import time
 
 class SAalgo:
     def __init__(self,k,features,categories,epsilon,neighbour,init_temper,dec):
@@ -38,6 +39,7 @@ class SAalgo:
 
     # 删除多出来的用户
     def Delete(self,profiles):
+        # 每个领域的用户
         # 先统计每个领域的人数,用以统计该领域是否能被减少人数
         categories = datapre.DomainDistribution(profiles,self.features)
         # 遍历,如果将其排除,那么损耗将会减少多少,将排除后损失依然小的排除
@@ -50,7 +52,7 @@ class SAalgo:
                 if self.features[profile][5] in has_category:
                     continue
                 profiles.remove(profile)
-                repre[profile] = metric.AttributeRepresentative(self.features,profiles)
+                repre[profile] = metric.AttributeRepresentative(profiles)
                 profiles.add(profile)
             # 对loss排个序,把代表性依然大的且可以移除的移除
             to_delete_id = (max(repre.items(),key=lambda dic:dic[1]))[0]
@@ -71,28 +73,23 @@ class SAalgo:
             p_number = int(self.k * self.categories[category]) + 1
             # tuples为该领域所有的人
             tuples = people[category]
-            # 迭代p_number次
-            count = 0
-            has_checked = set()
-            while count < p_number:
-                results = {}
-                for id in tuples:
-                    if id not in has_checked:
-                        profiles.add(id)
-                        results[id] = metric.AttributeRepresentativeByDomain(self.features,list(profiles),category)
-                        profiles.remove(id)
-                # 将最小的id加入到profiles中
-                to_add = (max(results.items(),key=lambda key:key[1]))[0]
-                has_checked.add(to_add)
-                # 检查是否领域典型约束
-                flag = metric.checkOneTypical(self.features,to_add,profiles,self.epsilon)
-                if flag:
-                    profiles.add(to_add)
-                    count += 1
-                else:
-                    # print "拒绝"
-                    pass
 
+            # 取前p_number个
+            results = {id:metric.AttributeRepresentativeByDomain([id],category) for id in tuples}
+            # for id in tuples:
+            #     results[id] = metric.AttributeRepresentativeByDomain([id],category)
+            #     count += 1
+            #     print count
+            results = sorted(results.items(),key=lambda key:key[1],reverse=True)[:p_number]
+            for i in range(len(results)):
+                count = 0
+                while count < p_number:
+                    if metric.checkOneTypical(results[i][0],profiles,self.epsilon):
+                        profiles.add(results[i][0])
+                        count += 1
+            print "the number of profiles is %d" % len(profiles)
+
+        print "开始删除"
         # 删除多出来的用户
         if len(profiles) > self.k:
             profiles = self.Delete(profiles)
@@ -102,10 +99,11 @@ class SAalgo:
     def Search(self):
         # 将人物按领域分类
         people = datapre.People(self.features)
-
+        categories = datapre.GetUserCategory()
         # 初始解(贪心算法获得)
         current_profiles = self.Greedy()
 
+        print "开始启发式搜索"
         while self.temper > 1.1:
             change = False
             # 开始迭代搜索解,对于领域解S,如果S优于当前解则接受领域解,否则以一定概率接受(如此避免了局部最优)
@@ -122,14 +120,14 @@ class SAalgo:
                 # 对其领域进行判断
                 while not neighbours.empty():
                     to_check = neighbours.get()
-                    old_loss = metric.AttributeRepresentative(self.features,current_profiles)
+                    old_loss = metric.AttributeRepresentative(current_profiles)
                     new_profiles.add(to_check)
-                    new_loss = metric.AttributeRepresentative(self.features,new_profiles)
+                    new_loss = metric.AttributeRepresentative(new_profiles)
                     delta = new_loss - old_loss
                     # print old_loss
                     # print new_loss
                     flag = self.accept(delta,self.temper)
-                    if flag and metric.checkOneTypical(self.features,to_check,new_profiles,self.epsilon):
+                    if flag and metric.checkOneTypical(to_check,new_profiles,self.epsilon):
                         current_profiles = new_profiles
                         change = True
                         break
@@ -141,8 +139,22 @@ class SAalgo:
         return list(current_profiles)
 
 def test():
-    method = SAalgo(20,datapre.Features(),datapre.CategoriesDistribution(),0.05,0.5,10,0.9)
-    profiles = method.Search()
-    print "Attribute Representativeness is"
-    print metric.AttributeRepresentative(method.features,profiles)
+
+    to_run = [40,60,80,100]
+    for i in to_run:
+        start_time = time.time()
+        method = SAalgo(i,datapre.Features(),datapre.CategoriesDistribution(),0.08,0.3,10,0.9)
+        profiles = method.Search()
+        end_time = time.time()
+
+        print "Attribute Representativeness is"
+        print metric.AttributeRepresentative(profiles)
+        with open("%dSA_results" % i,"wb") as f:
+            f.write("cost %f s" % (end_time - start_time))
+            f.write("\n")
+            f.write("Attribute Representativeness is:")
+            f.write(str(metric.AttributeRepresentative(profiles)))
+            f.write("\n")
+            for profile in profiles:
+                f.write(profile + "\t")
 test()
