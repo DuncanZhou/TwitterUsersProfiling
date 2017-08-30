@@ -10,6 +10,9 @@ import Distance as dist
 import Metric as metric
 import copy
 import time
+import pickle
+import os
+import numpy as np
 
 class KMedoidsCluster:
     def __init__(self,k,datasets):
@@ -122,29 +125,55 @@ class KMedoids:
         # 典型性判断参数
         self.epsilon = epsilon
 
+        # 统计集合中每个领域相应的人数
+    def DomainDistribution(self,profiles):
+        categories = datapre.DomainDistribution(profiles,self.features)
+        return categories
+
     # 删除多出来的用户
     def Delete(self,profiles):
+        print "开始删除多余结点"
         # 先统计每个领域的人数,用以统计该领域是否能被减少人数
-        categories = datapre.DomainDistribution(profiles,self.features)
+        categories = self.DomainDistribution(profiles)
+        people = datapre.People(self.features)
         # 遍历,如果将其排除,那么损耗将会减少多少,将排除后损失依然小的排除
         to_delete = len(profiles) - self.k
         has_category = set()
-        i = 0
-        while i < to_delete:
-            repre = {}
-            for profile in profiles:
-                if self.features[profile][5] in has_category:
-                    continue
-                profiles.remove(profile)
-                repre[profile] = metric.AttributeRepresentative(profiles)
-                profiles.add(profile)
-            # 对loss排个序,把代表性依然大的且可以移除的移除
-            to_delete_id = (max(repre.items(),key=lambda dic:dic[1]))[0]
-            has_category.add(self.features[to_delete_id][5])
-            # 判断是否能删除
-            if categories[self.features[to_delete_id][5]] == int(self.categories[self.features[to_delete_id][5]] * self.k) + 1:
-                profiles.remove(to_delete_id)
-                i += 1
+        count = 0
+        results = {}
+        for category in categories.keys():
+            if categories[category] == 1 or categories[category] == int(self.categories[category] * self.k):
+                # 该领域不能删除
+                continue
+            profile_domain = set([id for id in profiles if self.features[id][5] == category])
+            if os.path.exists("%sRepresentativeMatrix.pickle" % category):
+                # 加载矩阵
+                open_file = open("%sRepresentativeMatrix.pickle" % category)
+                R = pickle.load(open_file)
+                open_file.close()
+                # 加载id字典
+                open_file = open("%sRepresentativeDictionary.pickle" % category)
+                R_dic = pickle.load(open_file)
+                open_file.close()
+                # 该领域的代表性人物对应的所有行
+                rows = set([R_dic[id] for id in profile_domain])
+                print len(rows)
+                original = sum(np.max(np.asarray([R[i] for i in rows]),axis=0))
+                print len(profile_domain)
+                subresults = {profile:(original - sum(np.max(np.asarray([R[i] for i in (rows - {R_dic[profile]})]),axis=0))) for profile in profile_domain}
+
+                to_delete_id = (min(subresults.items(),key=lambda key:key[1]))[0]
+                print to_delete_id
+                results[to_delete_id] = subresults[to_delete_id]
+        # print len(results)
+        results = sorted(results.items(),key=lambda key:key[1])
+        for result in results:
+            print "the number of profiles is %d" % len(profiles)
+            profiles.remove(result[0])
+            has_category.add(self.features[result[0]][5])
+            count += 1
+            if count == to_delete:
+                break
         return profiles
 
     # 从聚类好的聚类簇中替换不满足要求的元素

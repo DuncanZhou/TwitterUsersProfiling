@@ -10,6 +10,9 @@ import Metric as metric
 import Queue
 import copy
 import time
+import pickle
+import os
+import numpy as np
 
 class SAalgo:
     def __init__(self,k,features,categories,epsilon,neighbour,init_temper,dec):
@@ -37,30 +40,55 @@ class SAalgo:
             return math.exp(delta * 1.0 / temper) > random.random()
             # return False
 
+    # 统计集合中每个领域相应的人数
+    def DomainDistribution(self,profiles):
+        categories = datapre.DomainDistribution(profiles,self.features)
+        return categories
+
     # 删除多出来的用户
     def Delete(self,profiles):
-        # 每个领域的用户
+        print "开始删除多余结点"
         # 先统计每个领域的人数,用以统计该领域是否能被减少人数
-        categories = datapre.DomainDistribution(profiles,self.features)
+        categories = self.DomainDistribution(profiles)
+        people = datapre.People(self.features)
         # 遍历,如果将其排除,那么损耗将会减少多少,将排除后损失依然小的排除
         to_delete = len(profiles) - self.k
         has_category = set()
-        i = 0
-        while i < to_delete:
-            repre = {}
-            for profile in profiles:
-                if self.features[profile][5] in has_category:
-                    continue
-                profiles.remove(profile)
-                repre[profile] = metric.AttributeRepresentative(profiles)
-                profiles.add(profile)
-            # 对loss排个序,把代表性依然大的且可以移除的移除
-            to_delete_id = (max(repre.items(),key=lambda dic:dic[1]))[0]
-            has_category.add(self.features[to_delete_id][5])
-            # 判断是否能删除
-            if categories[self.features[to_delete_id][5]] == int(self.categories[self.features[to_delete_id][5]] * self.k) + 1:
-                profiles.remove(to_delete_id)
-                i += 1
+        count = 0
+        results = {}
+        for category in categories.keys():
+            if categories[category] == 1 or categories[category] == int(self.categories[category] * self.k):
+                # 该领域不能删除
+                continue
+            profile_domain = set([id for id in profiles if self.features[id][5] == category])
+            if os.path.exists("%sRepresentativeMatrix.pickle" % category):
+                # 加载矩阵
+                open_file = open("%sRepresentativeMatrix.pickle" % category)
+                R = pickle.load(open_file)
+                open_file.close()
+                # 加载id字典
+                open_file = open("%sRepresentativeDictionary.pickle" % category)
+                R_dic = pickle.load(open_file)
+                open_file.close()
+                # 该领域的代表性人物对应的所有行
+                rows = set([R_dic[id] for id in profile_domain])
+                print len(rows)
+                original = sum(np.max(np.asarray([R[i] for i in rows]),axis=0))
+                print len(profile_domain)
+                subresults = {profile:(original - sum(np.max(np.asarray([R[i] for i in (rows - {R_dic[profile]})]),axis=0))) for profile in profile_domain}
+
+                to_delete_id = (min(subresults.items(),key=lambda key:key[1]))[0]
+                print to_delete_id
+                results[to_delete_id] = subresults[to_delete_id]
+        # print len(results)
+        results = sorted(results.items(),key=lambda key:key[1])
+        for result in results:
+            print "the number of profiles is %d" % len(profiles)
+            profiles.remove(result[0])
+            has_category.add(self.features[result[0]][5])
+            count += 1
+            if count == to_delete:
+                break
         return profiles
 
     # 退火算法初始解由随机产生或者贪心产生
@@ -104,38 +132,38 @@ class SAalgo:
         current_profiles = self.Greedy()
 
         print "开始启发式搜索"
-        while self.temper > 1.1:
-            change = False
-            # 开始迭代搜索解,对于领域解S,如果S优于当前解则接受领域解,否则以一定概率接受(如此避免了局部最优)
-            for profile in current_profiles:
-                # 对其中每个元素的领域元素判断,将profile领域的元素加入队列中
-                neighbours = Queue.Queue()
-                tuples = people[self.features[profile][5]]
-                for id in tuples:
-                    if id not in current_profiles and dist.distance(self.features[id],self.features[profile]) <= self.neighbour:
-                        neighbours.put(id)
-                print "有%d个邻居" % neighbours.qsize()
-                new_profiles = copy.deepcopy(current_profiles)
-                new_profiles.remove(profile)
-                # 对其领域进行判断
-                while not neighbours.empty():
-                    to_check = neighbours.get()
-                    old_loss = metric.AttributeRepresentative(current_profiles)
-                    new_profiles.add(to_check)
-                    new_loss = metric.AttributeRepresentative(new_profiles)
-                    delta = new_loss - old_loss
-                    # print old_loss
-                    # print new_loss
-                    flag = self.accept(delta,self.temper)
-                    if flag and metric.checkOneTypical(to_check,new_profiles,self.epsilon):
-                        current_profiles = new_profiles
-                        change = True
-                        break
-                    new_profiles.remove(to_check)
-            if not change:
-                # 没有改变
-                break
-            self.temper *= self.dec
+        # while self.temper > 1.1:
+        #     change = False
+        #     # 开始迭代搜索解,对于领域解S,如果S优于当前解则接受领域解,否则以一定概率接受(如此避免了局部最优)
+        #     for profile in current_profiles:
+        #         # 对其中每个元素的领域元素判断,将profile领域的元素加入队列中
+        #         neighbours = Queue.Queue()
+        #         tuples = people[self.features[profile][5]]
+        #         for id in tuples:
+        #             if id not in current_profiles and dist.distance(self.features[id],self.features[profile]) <= self.neighbour:
+        #                 neighbours.put(id)
+        #         print "有%d个邻居" % neighbours.qsize()
+        #         new_profiles = copy.deepcopy(current_profiles)
+        #         new_profiles.remove(profile)
+        #         # 对其领域进行判断
+        #         while not neighbours.empty():
+        #             to_check = neighbours.get()
+        #             old_loss = metric.AttributeRepresentative(current_profiles)
+        #             new_profiles.add(to_check)
+        #             new_loss = metric.AttributeRepresentative(new_profiles)
+        #             delta = new_loss - old_loss
+        #             # print old_loss
+        #             # print new_loss
+        #             flag = self.accept(delta,self.temper)
+        #             if flag and metric.checkOneTypical(to_check,new_profiles,self.epsilon):
+        #                 current_profiles = new_profiles
+        #                 change = True
+        #                 break
+        #             new_profiles.remove(to_check)
+        #     if not change:
+        #         # 没有改变
+        #         break
+        #     self.temper *= self.dec
         return list(current_profiles)
 
 def test():

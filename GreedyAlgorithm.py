@@ -9,6 +9,8 @@ import time
 import copy
 from numpy import *
 import numpy as np
+import pickle
+import os
 
 class Greedy:
     def __init__(self,k,features,categories,epsilon):
@@ -56,14 +58,31 @@ class Greedy:
             # tuples为该领域所有的人
             tuples = people[category]
 
-            # 两重循环计算代表性矩阵
-            R = []
-            print len(tuples)
-            for id in tuples:
-                row = []
-                for id1 in tuples:
-                    row.append(metric.Repre(self.features[id],self.features[id1]))
-                R.append(row)
+            if not os.path.exists("%sRepresentativeMatrix.pickle" % category):
+                # 两重循环计算代表性矩阵
+                R = []
+                print len(tuples)
+                for id in tuples:
+                    row = []
+                    for id1 in tuples:
+                        row.append(metric.Repre(self.features[id],self.features[id1]))
+                    R.append(row)
+                # 将R持久化
+                save_file = open("%sRepresentativeMatrix.pickle" % category,"wb")
+                pickle.dump(R,save_file)
+                save_file.close()
+                # 将用户id在矩阵中对应的行保存
+                R_dic = {}
+                for id,i in zip(tuples,xrange(len(tuples))):
+                    R_dic[id] = i
+                save_file = open("%sRepresentativeDictionary.pickle" % category,"wb")
+                pickle.dump(R_dic,save_file)
+                save_file.close()
+            else:
+                # 加载矩阵
+                open_file = open("%sRepresentativeMatrix.pickle" % category)
+                R = pickle.load(open_file)
+                open_file.close()
             rowN = len(tuples)
             results_vector = [0 for i in xrange(rowN)]
             # 得到了代表性矩阵后
@@ -77,9 +96,7 @@ class Greedy:
                 # 更新
                 results_vector = [max(x,y) for x,y in zip(R[to_add],results_vector)]
                 count += 1
-                print count
-            print len(has)
-            print len(profiles)
+                print "the number of profiles is %d" % len(profiles)
         return list(profiles)
 
     # 删除多出来的用户
@@ -87,45 +104,64 @@ class Greedy:
         print "开始删除多余结点"
         # 先统计每个领域的人数,用以统计该领域是否能被减少人数
         categories = self.DomainDistribution(profiles)
+        people = datapre.People(self.features)
         # 遍历,如果将其排除,那么损耗将会减少多少,将排除后损失依然小的排除
         to_delete = len(profiles) - self.k
         has_category = set()
         count = 0
-        while count < to_delete:
-        #
-        #     print len(has)
-        #     for i in has:
-        #         repre = {}
-        #         # 如果去掉profile,results_verctor等于剩余元素最大值
-        #         temp = set()
-        #         temp.add(i)
-        #         new_R = np.asarray([R[x] for x in (set(has.keys()) - temp)])
-        #         repre[i] = sum(np.max(new_R,axis=0))
+        results = {}
+        for category in categories.keys():
+            if categories[category] == 1 or categories[category] == int(self.categories[category] * self.k):
+                # 该领域不能删除
+                continue
+            profile_domain = set([id for id in profiles if self.features[id][5] == category])
+            if os.path.exists("%sRepresentativeMatrix.pickle" % category):
+                # 加载矩阵
+                open_file = open("%sRepresentativeMatrix.pickle" % category)
+                R = pickle.load(open_file)
+                open_file.close()
+                # 加载id字典
+                open_file = open("%sRepresentativeDictionary.pickle" % category)
+                R_dic = pickle.load(open_file)
+                open_file.close()
+                # 该领域的代表性人物对应的所有行
+                rows = set([R_dic[id] for id in profile_domain])
+                print len(rows)
+                original = sum(np.max(np.asarray([R[i] for i in rows]),axis=0))
+                print len(profile_domain)
+                subresults = {profile:(original - sum(np.max(np.asarray([R[i] for i in (rows - {R_dic[profile]})]),axis=0))) for profile in profile_domain}
+
+                to_delete_id = (min(subresults.items(),key=lambda key:key[1]))[0]
+                print to_delete_id
+                results[to_delete_id] = subresults[to_delete_id]
+        # print len(results)
+        results = sorted(results.items(),key=lambda key:key[1])
+        for result in results:
+            print "the number of profiles is %d" % len(profiles)
+            profiles.remove(result[0])
+            has_category.add(self.features[result[0]][5])
+            count += 1
+            if count == to_delete:
+                break
+        return profiles
+
+        # while count < to_delete:
+        #     repre = {}
+        #     for profile in profiles:
+        #         if self.features[profile][5] in has_category:
+        #             continue
+        #         profiles.remove(profile)
+        #         repre[profile] = metric.AttributeRepresentative(profiles)
+        #         profiles.add(profile)
         #     # 对loss排个序,把代表性依然大的且可以移除的移除
         #     to_delete_id = (max(repre.items(),key=lambda dic:dic[1]))[0]
-        #     has_category.add(self.features[has[to_delete_id]][5])
+        #     has_category.add(self.features[to_delete_id][5])
         #     # 判断是否能删除
-        #     if categories[self.features[has[to_delete_id]][5]] == int(self.categories[self.features[has[to_delete_id]][5]] * self.k) + 1:
+        #     if categories[self.features[to_delete_id][5]] == int(self.categories[self.features[to_delete_id][5]] * self.k) + 1:
         #         print "the number of profiles is %d" % len(profiles)
-        #         profiles.remove(has[to_delete_id])
-        #         has.pop(i)
+        #         profiles.remove(to_delete_id)
         #         count += 1
-            repre = {}
-            for profile in profiles:
-                if self.features[profile][5] in has_category:
-                    continue
-                profiles.remove(profile)
-                repre[profile] = metric.AttributeRepresentative(profiles)
-                profiles.add(profile)
-            # 对loss排个序,把代表性依然大的且可以移除的移除
-            to_delete_id = (max(repre.items(),key=lambda dic:dic[1]))[0]
-            has_category.add(self.features[to_delete_id][5])
-            # 判断是否能删除
-            if categories[self.features[to_delete_id][5]] == int(self.categories[self.features[to_delete_id][5]] * self.k) + 1:
-                print "the number of profiles is %d" % len(profiles)
-                profiles.remove(to_delete_id)
-                count += 1
-        return profiles
+        # return profiles
     # 贪心算法保证k个情况
     # def SearchWithK(self):
     #     people = datapre.People()
@@ -175,19 +211,46 @@ class Greedy:
     def Replace(self,target,profiles):
         # people为每个领域的用户集合
         people = datapre.People(self.features)
-        # 对target进行替换(在其所属领域寻找满足领域典型的,同样使用贪心算法)
+        category = self.features[target][5]
+        profiles.remove(target)
+        profile_domain = set([id for id in profiles if self.features[id][5] == category])
         index = profiles.index(target)
         old_element = profiles[index]
-        results = {}
-        for person in people[self.features[target][5]]:
-            if person != target and person not in profiles and metric.checkOneTypical(person,profiles,self.epsilon):
-                profiles[index] = person
-                results[person] = metric.AttributeRepresentativeByDomain(set(profiles),self.features[target][5])
-        new_element = (max(results.items(),key=lambda key:key[1]))[0]
-        self.replace[target] = new_element
-        profiles[index] = old_element
-        # print new_element
-        return new_element
+        if os.path.exists("%sRepresentativeMatrix.pickle" % category):
+            # 加载矩阵
+            open_file = open("%sRepresentativeMatrix.pickle" % category)
+            R = pickle.load(open_file)
+            open_file.close()
+            # 加载id字典
+            open_file = open("%sRepresentativeDictionary.pickle" % category)
+            R_dic = pickle.load(open_file)
+            open_file.close()
+            # 该领域的代表性人物对应的所有行
+            rows = set([R_dic[id] for id in profile_domain])
+            results = {element:sum(np.max(np.asarray([R[i] for i in rows]),axis=0)) for element in people[category] if element not in set(profiles)}
+            results = sorted(results.items(),key=lambda dic:dic[1],reverse=True)
+            for result in results:
+                to_replace = result[0]
+                if metric.checkOneTypical(to_replace,profiles,self.epsilon):
+                    self.replace[target] = to_replace
+                    profiles[index] = old_element
+                    # print new_element
+                    return to_replace
+
+
+        # # 对target进行替换(在其所属领域寻找满足领域典型的,同样使用贪心算法)
+        # index = profiles.index(target)
+        # old_element = profiles[index]
+        # results = {}
+        # for person in people[self.features[target][5]]:
+        #     if person != target and person not in profiles and metric.checkOneTypical(person,profiles,self.epsilon):
+        #         profiles[index] = person
+        #         results[person] = metric.AttributeRepresentativeByDomain(set(profiles),self.features[target][5])
+        # new_element = (max(results.items(),key=lambda key:key[1]))[0]
+        # self.replace[target] = new_element
+        # profiles[index] = old_element
+        # # print new_element
+        # return new_element
 
     # 在边集合中删除与点相关的边
     @staticmethod
@@ -225,8 +288,9 @@ class Greedy:
         # 递归终止条件(已经)
         if metric.checkAllTypical(current_profiles,self.epsilon):
             # print "找到一个可行解"
-            if self.max_repre == 0 or metric.AttributeRepresentative(set(current_profiles)) > self.max_repre:
-                self.max_repre = metric.AttributeRepresentative(set(current_profiles))
+            temp = metric.AttributeRepresentative(set(current_profiles))
+            if self.max_repre == 0 or temp > self.max_repre:
+                self.max_repre = temp
                 self.best_profiles = set(current_profiles)
                 # print self.best_profiles
                 print self.max_repre
@@ -278,13 +342,18 @@ class Greedy:
     # 先不管典型贪心寻找,然后在进行替换寻找最优值
     def SearchWithReplace(self):
         # 第一步,在没有领域典型的条件得到的贪心最优值
-        current_profiles,R,has = self.SearchWithoutConstraints()
+        current_profiles = self.SearchWithoutConstraints()
         print metric.AttributeRepresentative(set(current_profiles))
+        # 持久化找到的代表性人物
+        with open("%dGBProfiles" % len(current_profiles),"wb") as f:
+            for profile in current_profiles:
+                f.write(profile)
+                f.write("\n")
         # self.best_profiles = self.SearchWithK()
         # print metric.AttributeLoss(self.features,self.best_profiles)
 
         # 贪心排除多余的
-        self.best_profiles = self.Delete(set(current_profiles),R,has)
+        self.best_profiles = self.Delete(set(current_profiles))
 
         # 统计一下每个领域的人数
         # categories = self.DomainDistribution(self.best_profiles)
@@ -324,7 +393,7 @@ def test():
     to_run = [40,60,80,100]
     for i in to_run:
         start_time = time.time()
-        method = Greedy(i,datapre.Features(),datapre.CategoriesDistribution(),0.08)
+        method = Greedy(i,datapre.Features(),datapre.CategoriesDistribution(),0.05)
         # profiles = method.SearchWithoutConstraints()
         # profiles = method.SearchWithConstraints()
         profiles = method.SearchWithReplace()
