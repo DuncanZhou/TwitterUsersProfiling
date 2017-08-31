@@ -8,20 +8,27 @@
 import DataPrepare as datapre
 import Distance as dist
 import Metric as metric
-import copy
+from copy import deepcopy
 import time
 import pickle
 import os
 import numpy as np
 
 class KMedoidsCluster:
-    def __init__(self,k,datasets):
+    def __init__(self,k,datasets,category):
         # 需要聚类的数据集合
         self.features = datasets
         # 定义最大迭代次数
         self.Max_iteration = 100
         # 定义聚类簇个数
         self.k_min = k
+
+        #
+        self.R = np.load("new%sRepresentativeMatrix.pickle.npy" % category)
+        # 加载id字典
+        open_file = open("%sRepresentativeDictionary.pickle" % category)
+        self.R_dic = pickle.load(open_file)
+        open_file.close()
 
     # 计算质点到其聚类簇中其它点的代表性之和
     def CalcRepre(self,clusters,point):
@@ -31,35 +38,24 @@ class KMedoidsCluster:
         :param point: 质点
         :return:
         '''
-        sum = 0
-        for seed in clusters:
-            sum += metric.Repre(self.features[seed],self.features[point])
-        return sum
+
+        return sum(np.asarray([self.R[self.R_dic[point]][self.R_dic[col]] for col in clusters]))
+        # sum = 0
+        # for seed in clusters:
+        #     sum += metric.Repre(self.features[seed],self.features[point])
+        # return sum
 
     # 选取新的质点,代表性最大的作为新的质点
     def SelectNewMediod(self,clusters):
-        results = {}
-        for element in clusters:
-            results[element] = self.CalcRepre(clusters,element)
+        results = {element:self.CalcRepre(clusters,element) for element in clusters}
         return (max(results.items(),key=lambda key:key[1]))[0]
-
-    # 将人物按领域分类
-    def People(self):
-        # 将人物按领域分类
-        people = {}
-        for key in self.features.keys():
-            if self.features[key][5] not in people.keys():
-                people[self.features[key][5]] = [key]
-            else:
-                people[self.features[key][5]].append(key)
-        return people
 
     # 聚类
     def Cluster(self):
         k = self.k_min
         # 初始化种子
         k_seeds = list(datapre.Initial(self.features,k))
-
+        # 聚类领域
         # 聚类簇
         cluster = {}
 
@@ -71,32 +67,50 @@ class KMedoidsCluster:
                 cluster[seed] = set()
 
             # 对所有元素进行聚类
-            for key in self.features.keys():
-                results = {}
-                for seed in k_seeds:
-                    results[seed] = metric.Repre(self.features[seed],self.features[key])
-                # 距离k_seeds中的id最近,并入id聚类簇中
-                id = (max(results.items(),key=lambda key:key[1]))[0]
 
-                # # 计算样本与各均值向量距离,距离最近的向量划入相应的簇
-                # min = dist.distance(self.features[key],self.features[k_seeds[0]])
-                # # print min
-                # i = 1
-                # id = 0
-                # while i < k:
-                #     if dist.distance(self.features[key],self.features[k_seeds[i]]) < min:
-                #         min = dist.distance(self.features[key],self.features[k_seeds[i]])
-                #         id = i
-                #     i += 1
-                # 并入该聚类簇中
+
+            # 转换
+            Row_dic = {value:key for key,value in self.R_dic.items()}
+
+            # 中心在原来矩阵中的位置
+            k_seeds_row = [self.R_dic[id] for id in k_seeds]
+
+            # 每个元素最大代表性的位置
+            row = np.argmax(np.asarray([self.R[i] for i in k_seeds_row]),axis=0)
+            print row
+            # 形成新的聚类簇
+            for key,i in zip(self.features.keys(),xrange(len(row))):
                 new_element = set()
                 new_element.add(key)
-                cluster[id] = cluster[id] | new_element
+                cluster[Row_dic[k_seeds_row[row[i]]]] = cluster[Row_dic[k_seeds_row[row[i]]]] | new_element
+            print "新的聚类簇形成"
+            # for key in self.features.keys():
+            #     results = {}
+            #     for seed in k_seeds:
+            #         results[seed] = metric.Repre(self.features[seed],self.features[key])
+            #     # 距离k_seeds中的id最近,并入id聚类簇中
+            #     id = (max(results.items(),key=lambda key:key[1]))[0]
+            #
+            #     # # 计算样本与各均值向量距离,距离最近的向量划入相应的簇
+            #     # min = dist.distance(self.features[key],self.features[k_seeds[0]])
+            #     # # print min
+            #     # i = 1
+            #     # id = 0
+            #     # while i < k:
+            #     #     if dist.distance(self.features[key],self.features[k_seeds[i]]) < min:
+            #     #         min = dist.distance(self.features[key],self.features[k_seeds[i]])
+            #     #         id = i
+            #     #     i += 1
+            #     # 并入该聚类簇中
+            #     new_element = set()
+            #     new_element.add(key)
+            #     cluster[id] = cluster[id] | new_element
 
             # 更新质点向量
             # flag来判断是否需要停止迭代
             flag = True
             # 对每个聚类簇分别判断
+            print "更新聚类中心"
             new_k_seeds = set()
             for seed in k_seeds:
                 new_mediod = self.SelectNewMediod(list(cluster[seed]))
@@ -146,11 +160,12 @@ class KMedoids:
                 # 该领域不能删除
                 continue
             profile_domain = set([id for id in profiles if self.features[id][5] == category])
-            if os.path.exists("%sRepresentativeMatrix.pickle" % category):
+            if os.path.exists("new%sRepresentativeMatrix.pickle.npy" % category):
                 # 加载矩阵
-                open_file = open("%sRepresentativeMatrix.pickle" % category)
-                R = pickle.load(open_file)
-                open_file.close()
+                # open_file = open("%sRepresentativeMatrix.pickle.npy" % category)
+                # R = pickle.load(open_file)
+                # open_file.close()
+                R = np.load("%sRepresentativeMatrix.pickle.npy" % category)
                 # 加载id字典
                 open_file = open("%sRepresentativeDictionary.pickle" % category)
                 R_dic = pickle.load(open_file)
@@ -188,14 +203,21 @@ class KMedoids:
         # 替换过程用离medoids最近的且满足要求的元素来替换
 
         while True:
-            new_profiles = copy.deepcopy(profiles)
+            new_profiles = deepcopy(profiles)
             for profile in profiles:
                 if not metric.checkOneTypical(profile,new_profiles,self.epsilon):
                     new_profiles.remove(profile)
                     # 对profile进行替换,在cluster[profile]寻找profile对其代表性最大的元素,且满足条件的来替换
-                    results = {}
-                    for element in cluster[profile]:
-                        results[element] = metric.Repre(self.features[profile],self.features[element])
+                    R = np.load("%sRepresentativeMatrix.pickle.npy" % self.features[profile][5])
+                    # 加载id字典
+                    open_file = open("%sRepresentativeDictionary.pickle" % self.features[profile][5])
+                    R_dic = pickle.load(open_file)
+                    open_file.close()
+
+                    # 在其聚类簇中寻找到其代表性最大的来替换
+
+                    results = {id:R[R_dic[id]][R_dic[profile]] for id in cluster[profile]}
+                    # results = {element:metric.Repre(self.features[profile],self.features[element]) for element in cluster[profile]}
                     results = sorted(results.items(),key=lambda key:key[1],reverse=True)
                     flag = False
                     # 在results中找到profile最能代表的,且满足领域典型要求的元素
@@ -251,7 +273,7 @@ class KMedoids:
             # 对每个领域进行聚类
             number = int(self.k * self.categories[category]) + 1
             tuples = people[category]
-            method = KMedoidsCluster(number,datapre.FeaturesById(tuples,self.features))
+            method = KMedoidsCluster(number,datapre.FeaturesById(tuples,self.features),category)
             clusters,medoids = method.Cluster()
             # 先加入到profiles中
             for medoid in medoids:
@@ -270,7 +292,7 @@ def test():
     to_run = [40,60,80,100]
     for i in to_run:
         start_time = time.time()
-        method = KMedoids(i,datapre.CategoriesDistribution(),0.08)
+        method = KMedoids(i,datapre.CategoriesDistribution(),0.1556)
         profiles = method.Search()
         end_time = time.time()
         print metric.AttributeRepresentative(profiles)
@@ -285,5 +307,3 @@ def test():
             for profile in profiles:
                 f.write(profile + "\t")
 test()
-
-

@@ -61,11 +61,12 @@ class SAalgo:
                 # 该领域不能删除
                 continue
             profile_domain = set([id for id in profiles if self.features[id][5] == category])
-            if os.path.exists("%sRepresentativeMatrix.pickle" % category):
+            if os.path.exists("new%sRepresentativeMatrix.pickle.npy" % category):
                 # 加载矩阵
-                open_file = open("%sRepresentativeMatrix.pickle" % category)
-                R = pickle.load(open_file)
-                open_file.close()
+                # open_file = open("new%sRepresentativeMatrix.pickle.npy" % category)
+                # R = pickle.load(open_file)
+                # open_file.close()
+                R = np.load("new%sRepresentativeMatrix.pickle.npy" % category)
                 # 加载id字典
                 open_file = open("%sRepresentativeDictionary.pickle" % category)
                 R_dic = pickle.load(open_file)
@@ -102,13 +103,30 @@ class SAalgo:
             # tuples为该领域所有的人
             tuples = people[category]
 
-            # 取前p_number个
-            results = {id:metric.AttributeRepresentativeByDomain([id],category) for id in tuples}
-            # for id in tuples:
-            #     results[id] = metric.AttributeRepresentativeByDomain([id],category)
-            #     count += 1
-            #     print count
-            results = sorted(results.items(),key=lambda key:key[1],reverse=True)[:p_number]
+            # 加载R矩阵
+            if os.path.exists("new%sRepresentativeMatrix.pickle.npy" % category):
+                # 加载矩阵
+                # open_file = open("new%sRepresentativeMatrix.pickle" % category)
+                # R = pickle.load(open_file)
+                # open_file.close()
+                R = np.load("new%sRepresentativeMatrix.pickle.npy" % category)
+                # 加载对应的id字典
+                # 加载id字典
+                open_file = open("%sRepresentativeDictionary.pickle" % category)
+                R_dic = pickle.load(open_file)
+                open_file.close()
+                # 取代表性和最大的前p_number个
+                R = np.asarray(R)
+                sumRow = R.sum(axis=1)
+                results = {id:sumRow[R_dic[id]] for id in R_dic.keys()}
+                results = sorted(results.items(),key=lambda key:key[1],reverse=True)[:p_number]
+            # # 取前p_number个
+            # results = {id:metric.AttributeRepresentativeByDomain([id],category) for id in tuples}
+            # # for id in tuples:
+            # #     results[id] = metric.AttributeRepresentativeByDomain([id],category)
+            # #     count += 1
+            # #     print count
+            # results = sorted(results.items(),key=lambda key:key[1],reverse=True)[:p_number]
             for i in range(len(results)):
                 count = 0
                 while count < p_number:
@@ -171,7 +189,7 @@ def test():
     to_run = [40,60,80,100]
     for i in to_run:
         start_time = time.time()
-        method = SAalgo(i,datapre.Features(),datapre.CategoriesDistribution(),0.08,0.3,10,0.9)
+        method = SAalgo(i,datapre.Features(),datapre.CategoriesDistribution(),0.1556,0.3,10,0.9)
         profiles = method.Search()
         end_time = time.time()
 

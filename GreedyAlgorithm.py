@@ -134,18 +134,14 @@ class Greedy:
                 open_file.close()
                 # 该领域的代表性人物对应的所有行
                 rows = set([R_dic[id] for id in profile_domain])
-                print len(rows)
                 original = sum(np.max(np.asarray([R[i] for i in rows]),axis=0))
-                print len(profile_domain)
                 subresults = {profile:(original - sum(np.max(np.asarray([R[i] for i in (rows - {R_dic[profile]})]),axis=0))) for profile in profile_domain}
 
                 to_delete_id = (min(subresults.items(),key=lambda key:key[1]))[0]
-                print to_delete_id
                 results[to_delete_id] = subresults[to_delete_id]
         # print len(results)
         results = sorted(results.items(),key=lambda key:key[1])
         for result in results:
-
             profiles.remove(result[0])
             print "the number of profiles is %d" % len(profiles)
             has_category.add(self.features[result[0]][5])
@@ -226,12 +222,13 @@ class Greedy:
             results = sorted(results.items(),key=lambda dic:dic[1],reverse=True)
             for result in results:
                 to_replace = result[0]
+
                 if metric.checkOneTypical(to_replace,profiles,self.epsilon):
                     self.replace[target] = to_replace
                     profiles[index] = old_element
                     # print new_element
                     return to_replace
-
+        return None
 
         # # 对target进行替换(在其所属领域寻找满足领域典型的,同样使用贪心算法)
         # index = profiles.index(target)
@@ -309,6 +306,9 @@ class Greedy:
             if current_profiles[i] in self.replace.keys() and metric.checkOneTypical(current_profiles[i],new_profiles,self.epsilon):
                 new_profiles[i] = self.replace[current_profiles[i]]
             else:
+                if self.Replace(current_profiles[i],new_profiles) == None:
+                    print "不可替换"
+                    return
                 new_profiles[i] = self.Replace(current_profiles[i],new_profiles)
 
             # 删除edges中与i相关的边
@@ -323,6 +323,9 @@ class Greedy:
             if current_profiles[i] in self.replace.keys() and metric.checkOneTypical(current_profiles[i],new_profiles,self.epsilon):
                 new_profiles[i] = self.replace[current_profiles[i]]
             else:
+                if self.Replace(current_profiles[i],new_profiles) == None:
+                    print "不可替换"
+                    return
                 new_profiles[i] = self.Replace(current_profiles[i],new_profiles)
 
             # 删除edges中与i相关的边
@@ -388,7 +391,7 @@ def test():
     to_run = [40,60,80,100]
     for i in to_run:
         start_time = time.time()
-        method = Greedy(i,datapre.Features(),datapre.CategoriesDistribution(),0.045)
+        method = Greedy(i,datapre.Features(),datapre.CategoriesDistribution(),0.1555)
         # profiles = method.SearchWithoutConstraints()
         # profiles = method.SearchWithConstraints()
         profiles = method.SearchWithReplace()

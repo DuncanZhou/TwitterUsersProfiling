@@ -6,6 +6,8 @@ import Distance as dist
 import DataPrepare as datapre
 import math
 import random
+import numpy as np
+import pickle
 
 a = 2
 b = 50
@@ -14,6 +16,8 @@ Sampling_Number = 1000
 
 original_features = datapre.Features()
 people = datapre.People(original_features)
+categories = datapre.GetUserCategory()
+
 # 计算一个结点对另一个节点的代表性
 def Repre(u,v):
     if u == v:
@@ -28,26 +32,37 @@ def sigmoid(x):
 
 # 某个具体领域代表性计算
 def AttributeRepresentativeByDomain(profiles,domain):
-    original_domain = people[domain]
+    # 加载该领域的代表性矩阵
+    R = np.load("new%sRepresentativeMatrix.pickle.npy" % domain)
+    # 加载id字典
+    open_file = open("%sRepresentativeDictionary.pickle" % domain)
+    R_dic = pickle.load(open_file)
+    open_file.close()
+
     profile_domain = [id for id in profiles if original_features[id][5] == domain]
-    # repre = 0
-    # for key in original_domain:
-    #     repre += max(Repre(original_features[u],original_features[key]) for u in profile_domain)
-    repre = sum(max(Repre(original_features[u],original_features[key]) for u in profile_domain) for key in original_domain)
-    return repre + len(profile_domain)
+
+    # 将profile_domain中的最大值相加
+    repre = sum(np.max(np.asarray([R[R_dic[id]] for id in profile_domain]),axis=0))
+    # original_domain = people[domain]
+    # profile_domain = [id for id in profiles if original_features[id][5] == domain]
+    # # repre = 0
+    # # for key in original_domain:
+    # #     repre += max(Repre(original_features[u],original_features[key]) for u in profile_domain)
+    # repre = sum(max(Repre(original_features[u],original_features[key]) for u in profile_domain) for key in original_domain)
+    return repre
 
 # 属性代表性
 def AttributeRepresentative(profiles):
     # 分别在每个领域内计算代表性
-    # for category in categories:
-    #     tuples = people[category]
-    #     # 得到profiles中在这领域的代表性用户
-    #     profile_domain = [id for id in profiles if origin_features[id][5] == category]
-    #     if len(profile_domain) != 0:
-    #         repre += AttributeRepresentativeByDomain(origin_features,profile_domain,tuples,category)
-    # return repre
-    repre = sum(max(Repre(original_features[u],original_features[key]) for u in profiles) for key in original_features.keys())
-    return repre + len(profiles)
+    repre = 0
+    for category in categories:
+        # 得到profiles中在这领域的代表性用户
+        profile_domain = [id for id in profiles if original_features[id][5] == category]
+        if len(profile_domain) != 0:
+            repre += AttributeRepresentativeByDomain(profile_domain,category)
+    return repre
+    # repre = sum(max(Repre(original_features[u],original_features[key]) for u in profiles) for key in original_features.keys())
+    # return repre + len(profiles)
 
 # 领域分布损耗
 def DistributionLoss(profiles):
@@ -119,6 +134,7 @@ def Similarity(u,v):
 
 # 检查代表性子集中的单个元素是否满足领域代表性
 def checkOneTypical(target,profiles,epsilon):
+    # print len(profiles)
     categories = set([original_features[key][5] for key in profiles])
     categories = categories - set([original_features[target][5]])
     for category in categories:
