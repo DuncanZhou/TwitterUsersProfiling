@@ -19,7 +19,7 @@ class KMedoidsCluster:
         # 需要聚类的数据集合
         self.features = datasets
         # 定义最大迭代次数
-        self.Max_iteration = 100
+        self.Max_iteration = 30
         # 定义聚类簇个数
         self.k_min = k
 
@@ -67,45 +67,18 @@ class KMedoidsCluster:
                 cluster[seed] = set()
 
             # 对所有元素进行聚类
-
-
-            # 转换
-            Row_dic = {value:key for key,value in self.R_dic.items()}
-
-            # 中心在原来矩阵中的位置
-            k_seeds_row = [self.R_dic[id] for id in k_seeds]
-
-            # 每个元素最大代表性的位置
-            row = np.argmax(np.asarray([self.R[i] for i in k_seeds_row]),axis=0)
-            print row
-            # 形成新的聚类簇
-            for key,i in zip(self.features.keys(),xrange(len(row))):
-                new_element = set()
-                new_element.add(key)
-                cluster[Row_dic[k_seeds_row[row[i]]]] = cluster[Row_dic[k_seeds_row[row[i]]]] | new_element
+            for key in self.features.keys():
+                results = {seed:self.R[self.R_dic[seed],self.R_dic[key]] for seed in k_seeds}
+                # results = {}
+                # for seed in k_seeds:
+                #     results[seed] = metric.Repre(self.features[seed],self.features[key])
+                # 距离k_seeds中的id最近,并入id聚类簇中
+                id = (max(results.items(),key=lambda key:key[1]))[0]
+                # 并入该聚类簇中
+                cluster[id] = cluster[id] | {key}
             print "新的聚类簇形成"
-            # for key in self.features.keys():
-            #     results = {}
-            #     for seed in k_seeds:
-            #         results[seed] = metric.Repre(self.features[seed],self.features[key])
-            #     # 距离k_seeds中的id最近,并入id聚类簇中
-            #     id = (max(results.items(),key=lambda key:key[1]))[0]
-            #
-            #     # # 计算样本与各均值向量距离,距离最近的向量划入相应的簇
-            #     # min = dist.distance(self.features[key],self.features[k_seeds[0]])
-            #     # # print min
-            #     # i = 1
-            #     # id = 0
-            #     # while i < k:
-            #     #     if dist.distance(self.features[key],self.features[k_seeds[i]]) < min:
-            #     #         min = dist.distance(self.features[key],self.features[k_seeds[i]])
-            #     #         id = i
-            #     #     i += 1
-            #     # 并入该聚类簇中
-            #     new_element = set()
-            #     new_element.add(key)
-            #     cluster[id] = cluster[id] | new_element
-
+            # for seed in k_seeds:
+            #     print len(cluster[seed])
             # 更新质点向量
             # flag来判断是否需要停止迭代
             flag = True
