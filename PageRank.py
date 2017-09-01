@@ -53,10 +53,7 @@ class PageRank:
         iteration = 0
         rowN = NewPRMatrix.shape[0]
         while True:
-            # 将下面的公式转换一下
-            newPRMatrix = []
             # NewPRMatrix = fMatrix + d * uMatrix * OldPRMatrix
-            count = 0
             NewPRMatrix = uMatrix * OldPRMatrix * d + fMatrix
             # for i in range(len(uMatrix)):
             #     # 取uMatrix第i列
@@ -95,6 +92,8 @@ class PageRank:
         with open("InfluenceTop100","wb") as f:
             for user in uPR[:100]:
                 f.write(user[0])
+                f.write(" ")
+                f.write(user[1])
                 f.write("\n")
 
 def test():
@@ -118,4 +117,6 @@ def test():
     pickle.dump(result,save_file)
     save_file.close()
 
-# test()
+    method.GetTop100Users("PageRank_results.pickle")
+
+test()
