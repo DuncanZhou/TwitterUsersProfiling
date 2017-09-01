@@ -94,10 +94,12 @@ class SAalgo:
 
     # 退火算法初始解由随机产生或者贪心产生
     def Greedy(self):
+
         people = datapre.People(self.features)
         # 每次并入使得目标函数最小化
         profiles = set()
-        for category in self.categories.keys():
+        to_search_categories = self.categories.keys()
+        for category in to_search_categories:
             # p_number为该领域需要的人数
             p_number = int(self.k * self.categories[category]) + 1
             # tuples为该领域所有的人
@@ -119,7 +121,7 @@ class SAalgo:
                 R = np.asarray(R)
                 sumRow = R.sum(axis=1)
                 results = {id:sumRow[R_dic[id]] for id in R_dic.keys()}
-                results = sorted(results.items(),key=lambda key:key[1],reverse=True)[:p_number]
+                results = sorted(results.items(),key=lambda key:key[1],reverse=True)
             # # 取前p_number个
             # results = {id:metric.AttributeRepresentativeByDomain([id],category) for id in tuples}
             # # for id in tuples:
@@ -127,17 +129,21 @@ class SAalgo:
             # #     count += 1
             # #     print count
             # results = sorted(results.items(),key=lambda key:key[1],reverse=True)[:p_number]
+            count = 0
             for i in range(len(results)):
-                count = 0
-                while count < p_number:
-                    if metric.checkOneTypical(results[i][0],profiles,self.epsilon):
-                        profiles.add(results[i][0])
-                        count += 1
+                if metric.checkOneTypical(results[i][0],profiles,self.epsilon):
+                    profiles.add(results[i][0])
+                    count += 1
+                    if count == p_number:
+                        break
+            if count < p_number:
+                print "没找到领域典型的"
             print "the number of profiles is %d" % len(profiles)
 
-        print "开始删除"
+
         # 删除多出来的用户
         if len(profiles) > self.k:
+            print "开始删除"
             profiles = self.Delete(profiles)
         # print len(profiles)
         return profiles
@@ -189,7 +195,7 @@ def test():
     to_run = [40,60,80,100]
     for i in to_run:
         start_time = time.time()
-        method = SAalgo(i,datapre.Features(),datapre.CategoriesDistribution(),0.1556,0.3,10,0.9)
+        method = SAalgo(i,datapre.Features(),datapre.CategoriesDistribution(),0.1555,0.3,10,0.9)
         profiles = method.Search()
         end_time = time.time()
 
