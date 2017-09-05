@@ -5,7 +5,6 @@
 import Distance as dist
 import DataPrepare as datapre
 import math
-import random
 import numpy as np
 import pickle
 
@@ -14,8 +13,6 @@ b = 50
 Sampling_Number = 1000
 # 一共分为三个部分,属性损耗,分布损耗,代表性子集差异性
 
-original_features = datapre.Features()
-people = datapre.People(original_features)
 categories = datapre.GetUserCategory()
 
 # 计算一个结点对另一个节点的代表性
@@ -26,16 +23,22 @@ def Repre(u,v):
     distance = dist.distance(u,v)
     return 2*sigmoid(1.0 / distance) - 1
 
+def CRepre(u,v):
+    if u == v:
+        return 1
+    distance = dist.distanceWithoutDomain(u,v)
+    return 2*sigmoid(1.0 / distance) - 1
+
 # sigmoid函数,挤压函数
 def sigmoid(x):
     return 1 * 1.0 / (1 + math.exp(-x))
 
 # 某个具体领域代表性计算
-def AttributeRepresentativeByDomain(profiles,domain):
+def AttributeRepresentativeByDomain(original_features,profiles,domain):
     # 加载该领域的代表性矩阵
-    R = np.load("new%sRepresentativeMatrix.pickle.npy" % domain)
+    R = np.load("new%sRepresentativeMatrix.npy" % domain)
     # 加载id字典
-    open_file = open("%sRepresentativeDictionary.pickle" % domain)
+    open_file = open("new%sRepresentativeDictionary.pickle" % domain)
     R_dic = pickle.load(open_file)
     open_file.close()
 
@@ -52,20 +55,20 @@ def AttributeRepresentativeByDomain(profiles,domain):
     return repre
 
 # 属性代表性
-def AttributeRepresentative(profiles):
+def AttributeRepresentative(original_features,profiles):
     # 分别在每个领域内计算代表性
     repre = 0
     for category in categories:
         # 得到profiles中在这领域的代表性用户
         profile_domain = [id for id in profiles if original_features[id][5] == category]
         if len(profile_domain) != 0:
-            repre += AttributeRepresentativeByDomain(profile_domain,category)
+            repre += AttributeRepresentativeByDomain(original_features,profile_domain,category)
     return repre
     # repre = sum(max(Repre(original_features[u],original_features[key]) for u in profiles) for key in original_features.keys())
     # return repre + len(profiles)
 
 # 领域分布损耗
-def DistributionLoss(profiles):
+def DistributionLoss(original_features,profiles):
     categories = {}
     for key in original_features.keys():
         if original_features[key][5] not in categories.keys():
@@ -95,7 +98,7 @@ def DistributionLoss(profiles):
     return math.sqrt(loss)
 
 # 子集内部差异性
-def Dissimilarity(profiles):
+def Dissimilarity(original_features,profiles):
     # 先将所有人分类
     categories = {}
     for key in profiles:
@@ -127,18 +130,19 @@ def Dissimilarity(profiles):
     return total_similarity / (len(categories) - 1)
 
 # 相似性
-def Similarity(u,v):
+def Similarity(original_features,u,v):
     disatance = dist.distance(original_features[u],original_features[v])
     similarity = 2 * sigmoid(1.0 / disatance) - 1
     return similarity
 
 # 检查代表性子集中的单个元素是否满足领域代表性
-def checkOneTypical(target,profiles,epsilon):
-    # print len(profiles)
+def checkOneTypical(original_features,target,profiles,epsilon):
+    if len(profiles) == 0:
+        return True
     categories = set([original_features[key][5] for key in profiles])
     categories = categories - set([original_features[target][5]])
     for category in categories:
-        list = [Similarity(target,u) for u in profiles if original_features[u][5] == category]
+        list = [Similarity(original_features,target,u) for u in profiles if original_features[u][5] == category]
         # 代表性子集中某个领域没有,继续判断
         if len(list) == 0:
             continue
@@ -148,7 +152,7 @@ def checkOneTypical(target,profiles,epsilon):
     return True
 
 # 检查代表性子集中任意两个领域的相似性是否超出某个阈值
-def checkAllTypical(profiles,epsilon):
+def checkAllTypical(original_features,profiles,epsilon):
     '''
 
     :param origin_features: 原始数据集
@@ -157,54 +161,6 @@ def checkAllTypical(profiles,epsilon):
     :return:
     '''
     for profile in profiles:
-        if checkOneTypical(profile,profiles,epsilon) == False:
+        if checkOneTypical(original_features,profile,profiles,epsilon) == False:
             return False
     return True
-
-# # 抽样选取最大和最小距离
-# def Sampling(original_features):
-#     total_number = len(original_features)
-#     ids = original_features.keys()
-#     max = min = 0
-#     i = 0
-#     while i < Sampling_Number:
-#         a = random.randint(0,total_number-1)
-#         b = random.randint(0,total_number-1)
-#         while b == a:
-#             b = random.randint(0,total_number-1)
-#         if max == min == 0:
-#             min = dist.distance(original_features[ids[a]],original_features[ids[b]])
-#             max = min
-#         else:
-#             new_distance = dist.distance(original_features[ids[a]],original_features[ids[b]])
-#             if max < new_distance:
-#                 max = new_distance
-#             if min > new_distance:
-#                 min = new_distance
-#         i += 1
-#     return max,min
-
-# 一共分为三个部分,属性损耗,分布损耗,代表性子集差异性
-# maxn,minn = Sampling(datapre.Features())
-#　代表性子集的代表性衡量
-# def metric(origin_features,profiles):
-#     category_number = len(datapre.category_dic)
-#     total_number = len(origin_features.keys())
-#
-#     loss1 = ((AttributeLoss(origin_features,profiles)) - total_number * minn) / (total_number * maxn - total_number * minn)
-#     loss2 = DistributionLoss(origin_features,profiles) / math.sqrt(category_number)
-#     loss3 = Dissimilarity(origin_features,profiles) / category_number
-#     loss = loss1 + loss2 + loss3
-#     return loss
-
-# def test():
-#     features = datapre.Features()
-#     profile_features = {}
-#     i = 0
-#     for key in features.keys():
-#         profile_features[key] = features[key]
-#         i += 1
-#         if i > 20:
-#             break
-#     print metric(features,profile_features)
-# test()

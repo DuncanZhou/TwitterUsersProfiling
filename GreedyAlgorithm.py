@@ -31,20 +31,15 @@ class Greedy:
         self.max_repre = 0
         # 记录每个领域内按照目标函数值从小到大排序
         self.replace = {}
-
-    # 将一个领域内的用户按距离排序
-    @staticmethod
-    def SortByDistance(ids,features):
-        id_dist = {}
-        for id1 in ids:
-            distance = 0
-            for id2 in ids:
-                distance += dist.distance(features[id1],features[id2])
-            id_dist[id1] = distance
-
-        # 对字典进行排序
-        id_dists = sorted(id_dist.items(),key=lambda key:key[1])
-        return id_dists
+        self.Repre = {}
+        # 一次性加载代表性矩阵和id字典
+        for category in categories:
+            self.Repre[category] = np.load("new%sRepresentativeMatrix.npy" % category)
+        self.Repre_id = {}
+        for category in categories:
+            open_file = open("new%sRepresentativeDictionary.pickle" % category)
+            self.Repre_id[category] = pickle.load(open_file)
+            open_file.close()
 
     # 贪心寻找,暂不管领域典型条件
     def SearchWithoutConstraints(self):
@@ -58,36 +53,16 @@ class Greedy:
             # tuples为该领域所有的人
             tuples = people[category]
 
-            if not os.path.exists("new%sRepresentativeMatrix.pickle.npy" % category):
-                # 两重循环计算代表性矩阵
-                R = []
-                print len(tuples)
-                for id in tuples:
-                    row = []
-                    for id1 in tuples:
-                        row.append(metric.Repre(self.features[id],self.features[id1]))
-                    R.append(row)
-                # 将R持久化
-                # save_file = open("%sRepresentativeMatrix.pickle" % category,"wb")
-                # pickle.dump(R,save_file)
-                # save_file.close()
-                # 使用另一种保存方式
-                R = np.asarray(R)
-                np.save("new%sRepresentativeMatrix.pickle.npy" % category,R)
-                # 将用户id在矩阵中对应的行保存
-                R_dic = {}
-                for id,i in zip(tuples,xrange(len(tuples))):
-                    R_dic[id] = i
-                save_file = open("new%sRepresentativeDictionary.pickle" % category,"wb")
-                pickle.dump(R_dic,save_file)
-                save_file.close()
+            if not os.path.exists("new%sRepresentativeMatrix.npy" % category):
+                pass
             else:
                 # 加载矩阵
-                # open_file = open("%sRepresentativeMatrix.pickle" % category)
+                # open_file = open("new%sRepresentativeMatrix.pickle" % category)
                 # R = pickle.load(open_file)
                 # open_file.close()
                 # 换一种加载方式
-                R = np.load("new%sRepresentativeMatrix.pickle.npy" % category)
+                # R = np.load("new%sRepresentativeMatrix.npy" % category)
+                R = self.Repre[category]
             rowN = len(tuples)
             results_vector = np.asarray([0 for i in xrange(rowN)])
             # 得到了代表性矩阵后
@@ -111,7 +86,6 @@ class Greedy:
         print "开始删除多余结点"
         # 先统计每个领域的人数,用以统计该领域是否能被减少人数
         categories = self.DomainDistribution(profiles)
-        people = datapre.People(self.features)
         # 遍历,如果将其排除,那么损耗将会减少多少,将排除后损失依然小的排除
         to_delete = len(profiles) - self.k
         has_category = set()
@@ -122,16 +96,18 @@ class Greedy:
                 # 该领域不能删除
                 continue
             profile_domain = set([id for id in profiles if self.features[id][5] == category])
-            if os.path.exists("new%sRepresentativeMatrix.pickle.npy" % category):
+            if os.path.exists("new%sRepresentativeMatrix.npy" % category):
                 # 加载矩阵
                 # open_file = open("%sRepresentativeMatrix.pickle" % category)
                 # R = pickle.load(open_file)
                 # open_file.close()
-                R = np.load("new%sRepresentativeMatrix.pickle.npy" % category)
+                # R = np.load("new%sRepresentativeMatrix.npy" % category)
+                R = self.Repre[category]
                 # 加载id字典
-                open_file = open("%sRepresentativeDictionary.pickle" % category)
-                R_dic = pickle.load(open_file)
-                open_file.close()
+                # open_file = open("new%sRepresentativeDictionary.pickle" % category)
+                # R_dic = pickle.load(open_file)
+                # open_file.close()
+                R_dic = self.Repre_id[category]
                 # 该领域的代表性人物对应的所有行
                 rows = set([R_dic[id] for id in profile_domain])
                 original = sum(np.max(np.asarray([R[i] for i in rows]),axis=0))
@@ -206,16 +182,18 @@ class Greedy:
 
         profile_domain = set([id for id in profiles if self.features[id][5] == category])
 
-        if os.path.exists("new%sRepresentativeMatrix.pickle.npy" % category):
+        if os.path.exists("new%sRepresentativeMatrix.npy" % category):
             # 加载矩阵
             # open_file = open("%sRepresentativeMatrix.pickle" % category)
             # R = pickle.load(open_file)
             # open_file.close()
-            R = np.load("new%sRepresentativeMatrix.pickle.npy" % category)
+            # R = np.load("new%sRepresentativeMatrix.npy" % category)
+            R = self.Repre[category]
             # 加载id字典
-            open_file = open("%sRepresentativeDictionary.pickle" % category)
-            R_dic = pickle.load(open_file)
-            open_file.close()
+            # open_file = open("new%sRepresentativeDictionary.pickle" % category)
+            # R_dic = pickle.load(open_file)
+            # open_file.close()
+            R_dic = self.Repre_id[category]
             # 该领域的代表性人物对应的所有行
             rows = set([R_dic[id] for id in profile_domain])
             results = {element:sum(np.max(np.asarray([R[i] for i in rows | {R_dic[element]}]),axis=0)) for element in people[category] if element not in set(profiles)}
@@ -223,7 +201,7 @@ class Greedy:
             for result in results:
                 to_replace = result[0]
 
-                if metric.checkOneTypical(to_replace,profiles,self.epsilon):
+                if metric.checkOneTypical(self.features,to_replace,profiles,self.epsilon):
                     self.replace[target] = to_replace
                     profiles[index] = old_element
                     # print new_element
@@ -278,9 +256,9 @@ class Greedy:
     # 递归替换非领域典型元素算法
     def SearchRecursion(self,index,current_profiles,noneTypical,edges):
         # 递归终止条件(已经)
-        if metric.checkAllTypical(current_profiles,self.epsilon):
+        if metric.checkAllTypical(self.features,current_profiles,self.epsilon):
             # print "找到一个可行解"
-            temp = metric.AttributeRepresentative(set(current_profiles))
+            temp = metric.AttributeRepresentative(self.features,set(current_profiles))
             if self.max_repre == 0 or temp > self.max_repre:
                 self.max_repre = temp
                 self.best_profiles = set(current_profiles)
@@ -291,6 +269,9 @@ class Greedy:
         if index == len(noneTypical):
             return
 
+        # 如果当前不满足领域典型的结果都小于当前最优结果,则不需要再往下替换
+        if metric.AttributeRepresentative(self.features,set(current_profiles)) <= self.max_repre:
+            return
         # 三种情况,不替换,替换,可替换可不替换
 
         i = noneTypical[index]
@@ -303,13 +284,10 @@ class Greedy:
             # 替换
             new_profiles = deepcopy(current_profiles)
             # 先在已经计算过的字典中去寻找
-            if current_profiles[i] in self.replace.keys() and metric.checkOneTypical(current_profiles[i],new_profiles,self.epsilon):
-                new_profiles[i] = self.replace[current_profiles[i]]
-            else:
-                if self.Replace(current_profiles[i],new_profiles) == None:
-                    print "不可替换"
-                    return
-                new_profiles[i] = self.Replace(current_profiles[i],new_profiles)
+            if self.Replace(current_profiles[i],new_profiles) == None:
+                print "不可替换"
+                return
+            new_profiles[i] = self.Replace(current_profiles[i],new_profiles)
 
             # 删除edges中与i相关的边
             newedges = self.DeleteEdges(edges,i)
@@ -320,13 +298,10 @@ class Greedy:
             # 替换
             new_profiles = deepcopy(current_profiles)
             # 先在已经计算过的字典中去寻找
-            if current_profiles[i] in self.replace.keys() and metric.checkOneTypical(current_profiles[i],new_profiles,self.epsilon):
-                new_profiles[i] = self.replace[current_profiles[i]]
-            else:
-                if self.Replace(current_profiles[i],new_profiles) == None:
-                    print "不可替换"
-                    return
-                new_profiles[i] = self.Replace(current_profiles[i],new_profiles)
+            if self.Replace(current_profiles[i],new_profiles) == None:
+                print "不可替换"
+                return
+            new_profiles[i] = self.Replace(current_profiles[i],new_profiles)
 
             # 删除edges中与i相关的边
             newedges = self.DeleteEdges(edges,i)
@@ -341,7 +316,7 @@ class Greedy:
     def SearchWithReplace(self):
         # 第一步,在没有领域典型的条件得到的贪心最优值
         current_profiles = self.SearchWithoutConstraints()
-        print metric.AttributeRepresentative(set(current_profiles))
+        print metric.AttributeRepresentative(self.features,set(current_profiles))
         # 持久化找到的代表性人物
         # with open("%dGBProfiles" % len(current_profiles),"wb") as f:
         #     for profile in current_profiles:
@@ -361,7 +336,7 @@ class Greedy:
         best_profiles = list(self.best_profiles)
         # 直接贪心搜索到的解的损耗是
         print "直接贪心搜索到的解的属性代表性是"
-        print metric.AttributeRepresentative(self.best_profiles)
+        print metric.AttributeRepresentative(self.features,self.best_profiles)
         # vertexs = set()
         # # 顶点替换代价
         # vertexs_cost = {}
@@ -372,12 +347,12 @@ class Greedy:
         while i < len(best_profiles):
             j = i + 1
             while j < len(best_profiles):
-                if metric.Similarity(best_profiles[i],best_profiles[j]) > self.epsilon:
+                if metric.Similarity(self.features,best_profiles[i],best_profiles[j]) > self.epsilon:
                     edges.append((i,j))
                 j += 1
             i += 1
         for profile in best_profiles:
-            if not metric.checkOneTypical(profile,self.best_profiles,self.epsilon):
+            if not metric.checkOneTypical(self.features,profile,self.best_profiles,self.epsilon):
                 NoneTypical.append(best_profiles.index(profile))
         print NoneTypical
 
@@ -403,8 +378,8 @@ def test():
             f.write("cost %f s" % (end_time - start_time))
             f.write("\n")
             f.write("Attribute Representativeness is:")
-            f.write(str(metric.AttributeRepresentative(profiles)))
+            f.write(str(metric.AttributeRepresentative(datapre.Features(),profiles)))
             f.write("\n")
             for profile in profiles:
                 f.write(profile + "\t")
-test()
+# test()

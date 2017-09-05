@@ -6,6 +6,8 @@ import TwitterWithNeo4j as neo4j
 from scipy.sparse import csr_matrix
 import DataPrepare as datapre
 import pickle
+import Metric as metric
+import Experiment as experiment
 
 class PageRank:
     def __init__(self,k,features):
@@ -79,7 +81,7 @@ class PageRank:
 
     # 构造字典,读取PageRank结果,提取出影响力最大的前100位
     def GetTop100Users(self,path):
-        open_file = open("PageRank_results.pickle")
+        open_file = open(path)
         PRMatrix = pickle.load(open_file)
         open_file.close()
         uPR = {}
@@ -93,30 +95,66 @@ class PageRank:
             for user in uPR[:100]:
                 f.write(user[0])
                 f.write(" ")
-                f.write(user[1])
+                print user[1]
+                f.write(str(user[1]))
                 f.write("\n")
+
+                # 计算PageRank提取出的人物分布
+    def ReadDomain(self,path):
+        categories = {}
+        with open(path,"rb") as f:
+            lines = f.readlines()
+            profiles = set()
+            for line in lines:
+                profiles.add(line.split(" ")[0])
+                if self.features[line.split(" ")[0]][5] not in categories.keys():
+                    categories[self.features[line.split(" ")[0]][5]] = 1
+                else:
+                    categories[self.features[line.split(" ")[0]][5]] += 1
+        return categories
+
+# 分别计算PageRank提取出的影响力人物的前40,60,80,100的属性代表性值
+def ReadAttributeRepre(path):
+    with open(path,"rb") as f:
+        lines = f.readlines()
+        profiles = set()
+        for line in lines:
+            profiles.add(line.split(" ")[0])
+            if len(profiles) == 40 or len(profiles) == 60 or len(profiles) == 80 or len(profiles) == 100:
+                repre = metric.AttributeRepresentative(profiles)
+                with open("%dPageRank_results" % len(profiles),"wb") as subf:
+                    subf.write("Attribute Features Representative is %f\n" % repre)
+                    subf.write("子集为:")
+                    for profile in profiles:
+                        subf.write(profile + "\t")
+                    subf.write("\n")
+
+
+
 
 def test():
     method = PageRank(40,datapre.Features())
     # 获得出入度矩阵
-    uMatrix = method.GetUserMatrix()
 
+    # uMatrix = method.GetUserMatrix()
     # open_file = open("/home/duncan/uMatrix.pickle")
     # uMatrix = pickle.load(open_file)
     # open_file.close()
     # uMatrix = uMatrix.T
+    #
+    # # 转移矩阵
+    # fMatrix = mat([(1 - 0.85) / len(method.features) for i in range(len(method.features))]).T
+    # # 初始矩阵
+    # initPRMatrix = mat([1 for i in range(len(method.features))]).T
+    #
+    # result = method.PageRank(uMatrix,fMatrix,0.85,initPRMatrix,0.01,120)
+    #
+    # save_file = open("PageRank_results.pickle","wb")
+    # pickle.dump(result,save_file)
+    # save_file.close()
 
-    # 转移矩阵
-    fMatrix = mat([(1 - 0.85) / len(method.features) for i in range(len(method.features))]).T
-    # 初始矩阵
-    initPRMatrix = mat([1 for i in range(len(method.features))]).T
-
-    result = method.PageRank(uMatrix,fMatrix,0.85,initPRMatrix,0.01,120)
-
-    save_file = open("PageRank_results.pickle","wb")
-    pickle.dump(result,save_file)
-    save_file.close()
-
-    method.GetTop100Users("PageRank_results.pickle")
+    # method.GetTop100Users("PageRank_results.pickle")
+    # ReadAttributeRepre("/home/duncan/InfluenceTop100")
+    experiment.DomainDistribution(method.ReadDomain("/home/duncan/InfluenceTop100"))
 
 test()

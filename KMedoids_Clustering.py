@@ -24,9 +24,9 @@ class KMedoidsCluster:
         self.k_min = k
 
         #
-        self.R = np.load("new%sRepresentativeMatrix.pickle.npy" % category)
+        self.R = np.load("new%sRepresentativeMatrix.npy" % category)
         # 加载id字典
-        open_file = open("%sRepresentativeDictionary.pickle" % category)
+        open_file = open("new%sRepresentativeDictionary.pickle" % category)
         self.R_dic = pickle.load(open_file)
         open_file.close()
 
@@ -65,6 +65,8 @@ class KMedoidsCluster:
             print k_seeds
             for seed in k_seeds:
                 cluster[seed] = set()
+                # 把种子加入
+                cluster[seed] = cluster[seed] | {seed}
 
             # 对所有元素进行聚类
             for key in self.features.keys():
@@ -103,8 +105,8 @@ class KMedoidsCluster:
 
 class KMedoids:
     # 初始函数
-    def __init__(self,k,categories,epsilon):
-        self.features = datapre.Features()
+    def __init__(self,k,features,categories,epsilon):
+        self.features = features
         # 一共需要人数
         self.k = k
         # 全局领域分布情况
@@ -122,7 +124,7 @@ class KMedoids:
         print "开始删除多余结点"
         # 先统计每个领域的人数,用以统计该领域是否能被减少人数
         categories = self.DomainDistribution(profiles)
-        people = datapre.People(self.features)
+
         # 遍历,如果将其排除,那么损耗将会减少多少,将排除后损失依然小的排除
         to_delete = len(profiles) - self.k
         has_category = set()
@@ -133,21 +135,19 @@ class KMedoids:
                 # 该领域不能删除
                 continue
             profile_domain = set([id for id in profiles if self.features[id][5] == category])
-            if os.path.exists("new%sRepresentativeMatrix.pickle.npy" % category):
+            if os.path.exists("new%sRepresentativeMatrix.npy" % category):
                 # 加载矩阵
                 # open_file = open("%sRepresentativeMatrix.pickle.npy" % category)
                 # R = pickle.load(open_file)
                 # open_file.close()
-                R = np.load("%sRepresentativeMatrix.pickle.npy" % category)
+                R = np.load("new%sRepresentativeMatrix.npy" % category)
                 # 加载id字典
-                open_file = open("%sRepresentativeDictionary.pickle" % category)
+                open_file = open("new%sRepresentativeDictionary.pickle" % category)
                 R_dic = pickle.load(open_file)
                 open_file.close()
                 # 该领域的代表性人物对应的所有行
                 rows = set([R_dic[id] for id in profile_domain])
-                print len(rows)
                 original = sum(np.max(np.asarray([R[i] for i in rows]),axis=0))
-                print len(profile_domain)
                 subresults = {profile:(original - sum(np.max(np.asarray([R[i] for i in (rows - {R_dic[profile]})]),axis=0))) for profile in profile_domain}
 
                 to_delete_id = (min(subresults.items(),key=lambda key:key[1]))[0]
@@ -172,18 +172,19 @@ class KMedoids:
         :param cluster: 字典形式的,以profiles为key,聚类簇value为列表格式
         :return: 返回替换好的profiles
         '''
-        iteration = True
+
         # 替换过程用离medoids最近的且满足要求的元素来替换
 
         while True:
+            iteration = True
             new_profiles = deepcopy(profiles)
             for profile in profiles:
-                if not metric.checkOneTypical(profile,new_profiles,self.epsilon):
+                if not metric.checkOneTypical(self.features,profile,new_profiles,self.epsilon):
                     new_profiles.remove(profile)
                     # 对profile进行替换,在cluster[profile]寻找profile对其代表性最大的元素,且满足条件的来替换
-                    R = np.load("%sRepresentativeMatrix.pickle.npy" % self.features[profile][5])
+                    R = np.load("new%sRepresentativeMatrix.npy" % self.features[profile][5])
                     # 加载id字典
-                    open_file = open("%sRepresentativeDictionary.pickle" % self.features[profile][5])
+                    open_file = open("new%sRepresentativeDictionary.pickle" % self.features[profile][5])
                     R_dic = pickle.load(open_file)
                     open_file.close()
 
@@ -196,7 +197,7 @@ class KMedoids:
                     # 在results中找到profile最能代表的,且满足领域典型要求的元素
                     for result in results:
                         key = result[0]
-                        if metric.checkOneTypical(key,new_profiles,self.epsilon):
+                        if metric.checkOneTypical(self.features,key,new_profiles,self.epsilon):
                             new_profiles.add(key)
                             cluster[key] = cluster[profile]
                             cluster.pop(profile)
@@ -221,7 +222,7 @@ class KMedoids:
                             if self.features[profile][5] == category:
                                 number += 1
                         # 重新对tuples聚类
-                        method = KMedoidsCluster(number,datapre.FeaturesById(tuples,self.features))
+                        method = KMedoidsCluster(number,datapre.FeaturesById(tuples,self.features),category)
                         clusters,medoids = method.Cluster()
                         for key in clusters.keys():
                             cluster[key] = clusters[key]
@@ -262,21 +263,22 @@ class KMedoids:
 
 
 def test():
+    features = datapre.Features()
     to_run = [40,60,80,100]
     for i in to_run:
         start_time = time.time()
-        method = KMedoids(i,datapre.CategoriesDistribution(),0.1556)
+        method = KMedoids(i,datapre.Features(),datapre.CategoriesDistribution(),0.1555)
         profiles = method.Search()
         end_time = time.time()
-        print metric.AttributeRepresentative(profiles)
+        print metric.AttributeRepresentative(features,profiles)
         print profiles
         print "cost %f s" % (end_time - start_time)
         with open("%dclustering_result" % i,"wb") as f:
             f.write("cost %f s" % (end_time - start_time))
             f.write("\n")
             f.write("Attribute Representativeness is:")
-            f.write(str(metric.AttributeRepresentative(profiles)))
+            f.write(str(metric.AttributeRepresentative(features,profiles)))
             f.write("\n")
             for profile in profiles:
                 f.write(profile + "\t")
-test()
+# test()

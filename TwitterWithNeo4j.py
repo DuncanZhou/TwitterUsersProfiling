@@ -170,7 +170,7 @@ def GetFollowings(driver,session,u):
 # 获取某个用户的followers
 def GetFollowers(driver,session,u):
     followers = set()
-    statement = "match (v:TwitterUser {userid:'%s'})-[:follows]->('%s':TwitterUser) return v.userid" % u
+    statement = "match (v:TwitterUser)-[:follows]->(u:TwitterUser {userid:'%s'}) return v.userid" % u
     # session运行带参
     results = session.run(statement)
     # 遍历结果集

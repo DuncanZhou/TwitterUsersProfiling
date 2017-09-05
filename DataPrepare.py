@@ -5,21 +5,20 @@
 import MySQLdb
 import MySQLdb.cursors
 import numpy as np
-import Distance
 import random
 import csv
 
 # 每个样本的格式[Followers/Following,Activity,Influence,Interests_tags,location,category]
 class TwitterUser:
-    def __init__(self,userid,fratio,activity,influence,interest_tags,location,category):
+    def __init__(self,userid,followers,activity,influence,friends,location,category,interest_tags):
         self.userid = userid
-        self.fratio = fratio
+        self.followers = followers
         self.activity = activity
         self.influence = influence
         self.interest_tags = interest_tags
         self.location = location
         self.category = category
-
+        self.friends = friends
 
 # 数据库连接
 def Connection():
@@ -65,7 +64,7 @@ def GetUserFeature(userid,table="newStandardUsers"):
     conn,cursor = Connection()
     cursor.execute("SELECT * FROM %s where userid = '%s'" % (table,userid))
     data = cursor.fetchall()
-    twitter_user = TwitterUser(data[0]['user_id'],data[0]['followers_count'] * 1.0 / data[0]['friends_count'],data[0]['activity'],data[0]['influence_score'],data[0]['interest_tags'],data[0]['time_zone'],data[0]['category'])
+    twitter_user = TwitterUser(data[0]['user_id'],data[0]['followers_count'] * 1.0,data[0]['activity'],data[0]['influence_score'], data[0]['friends_count'] * 1.0,data[0]['time_zone'],data[0]['category'],data[0]['interest_tags'])
     Close(conn,cursor)
     return twitter_user
 
@@ -76,11 +75,7 @@ def GetUsersFeature(table="newStandardUsers"):
     datas = cursor.fetchall()
     users = []
     for data in datas:
-        if data['friends_count'] == 0:
-            fratio = data['followers_count'] * 1.0 / 1
-        else:
-            fratio = data['followers_count'] * 1.0 / data['friends_count']
-        twitter_user = TwitterUser(data['user_id'],fratio,data['activity'],data['influence_score'],data['interest_tags'],data['time_zone'],data['category'])
+        twitter_user = TwitterUser(data['user_id'],float(data['followers_count']),data['activity'],data['influence_score'],float(data['friends_count']),data['time_zone'],data['category'],data['interest_tags'] )
         users.append(twitter_user)
     Close(conn,cursor)
     return users
@@ -115,7 +110,7 @@ def GenerateFeatures(users):
     features = []
 
     for user in users:
-        features.append((user.fratio,user.activity,user.influence,user.interest_tags.split(","),user.location,user.category,user.userid))
+        features.append((user.followers,user.activity,user.influence,user.friends,user.location,user.category,user.interest_tags.split(","),user.userid))
     return features
 
 # 获取原集中的领域分布
@@ -139,7 +134,7 @@ def CategoriesDistribution(table="newStandardUsers"):
 def Normalized(features):
     features3 = []
     for feature in features:
-        features3.append(feature[:3])
+        features3.append(feature[:4])
     x = np.array(features3).astype(float)
     # 以列来计算
     xr = np.rollaxis(x,axis=0)
@@ -150,10 +145,12 @@ def Normalized(features):
     new_features = []
     for r,feature in zip(xr,features):
         pre_feature = []
-        pre_feature.append(r[0])
+        # r[0]是followers
+        pre_feature.append(r[0] / 100)
         pre_feature.append(r[1])
         pre_feature.append(r[2])
-        normal_feature = pre_feature + list(feature[3:])
+        pre_feature.append(r[3] / 100)
+        normal_feature = pre_feature + list(feature[4:])
         new_features.append(normal_feature)
     return new_features
 
@@ -161,12 +158,13 @@ def Normalized(features):
 def Features(table="newStandardUsers"):
     features = GenerateFeatures(GetUsersFeature(table))
     # 归一化完成
-    new_features = Normalized(features)
-    features = {}
-    for feature in new_features:
+    features = Normalized(features)
+    print "归一化完成"
+    new_features = {}
+    for feature in features:
         userid = feature[len(feature) - 1]
-        features[userid] = feature
-    return features
+        new_features[userid] = feature
+    return new_features
 
 def Initial(features,k):
     '''
@@ -193,15 +191,25 @@ def find_key(dict,value):
             return key
     return None
 
+# 返回某个领域的用户id
+def GetPeopleIdByDomain(domain,table="newStandardUsers"):
+    conn,cursor = Connection()
+    cursor.execute("SELECT user_id FROM %s where category = '%s'" % (table,domain))
+    datas = cursor.fetchall()
+    tuples = []
+    for data in datas:
+        tuples.append(data['user_id'])
+    Close(conn,cursor)
+    return tuples
+
 # 将人物按领域分类
 def People(features):
-    # 将人物按领域分类
     people = {}
-    for key in features.keys():
-        if features[key][5] not in people.keys():
-            people[features[key][5]] = [key]
+    for feature in features.keys():
+        if features[feature][5] not in people.keys():
+            people[features[feature][5]] = [feature]
         else:
-            people[features[key][5]].append(key)
+            people[features[feature][5]].append(feature)
     return people
 
 # 根据id构建字典
@@ -220,7 +228,6 @@ def DomainDistribution(profiles,features):
         else:
             categories[features[profile][5]] += 1
     return categories
-
 
 # 为存入neo4j做准备
 

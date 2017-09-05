@@ -14,9 +14,9 @@ P = 2
 # 高斯核函数中的sigma
 sigma = 1
 
-# 每个样本的格式[Followers/Following,Activity,Influence,Interests_tags,location,category]
+# 每个样本的格式[Followers,Activity,Influence,following,location,category,Interests_tags,userid]
 # 定义每个特征的权重
-weight = [0.16,0.21,0.26,0.16,0.21]
+weight = [0.08,0.21,0.26,0.16,0.21,0.08]
 # weight = [0.16,0.16,0.16,0.16,0.16,0.2]
 
 # 距离变小变量
@@ -27,28 +27,50 @@ def distance(feature1,feature2):
     # 非对称函数,求feature1对feature2的代表性损耗
     # 前三个特征属于连续特征,基于闵可夫斯基来计算
     part1 = 0
-    for i in range(3):
+    for i in range(4):
         part1 += weight[i] * math.pow(feature1[i]-feature2[i],P)
-
     # Interest_tags基于相似性(Jaccard相似性)来计算
-    tags1 = set(map(lambda word:word.lower(),feature1[3]))
-    tags2 = set(map(lambda word:word.lower(),feature2[3]))
+    tags1 = set(map(lambda word:word.lower(),feature1[6]))
+    tags2 = set(map(lambda word:word.lower(),feature2[6]))
     part2 = 1 - len(tags1 & tags2) * 1.0 / len(tags1 | tags2)
 
     # location和category属于离散属性,基于离散属性距离计算
     if feature1[4] == feature2[4]: part3 = 0
     else: part3 = 1
     if feature1[5] == feature2[5]: part4 = 0
-    else: part4 = 100
+    else: part4 = 10
     # distance = math.exp(-1 * 1.0 / (2 * math.pow(sigma,2)) * math.pow(part1 + weight[3] * part2 + weight[4] * part3 + weight[5] * part4,1.0 / P))
     distance = math.pow(part1 + weight[3] * part2 + weight[4] * part3 + part4,1.0 / P)
     # 非对称的距离函数,如果v follows u,那么u对v的距离降低
-    # if neo4j.CheckFollows(feature2[6],feature1[6]) == True:
+    # if neo4j.CheckFollows(feature2[7],feature1[7]) == True:
     #     distance *= alpha
     return distance
 
-# def test():
-#     feature1 = [0.1,0.1,0.3,set(['a','b','c']),'US','Politics']
-#     feature2 = [0.1,0.1,0.3,set(['b','b','c']),'US','Politics']
-#     print distance(feature1,feature2)
+# 不含领域的距离
+def distanceWithoutDomain(feature1,feature2):
+    # 非对称函数,求feature1对feature2的代表性损耗
+    # 前三个特征属于连续特征,基于闵可夫斯基来计算
+    part1 = 0
+    for i in range(4):
+        part1 += weight[i] * math.pow(feature1[i]-feature2[i],P)
+    # Interest_tags基于相似性(Jaccard相似性)来计算
+    tags1 = set(map(lambda word:word.lower(),feature1[6]))
+    tags2 = set(map(lambda word:word.lower(),feature2[6]))
+    part2 = 1 - len(tags1 & tags2) * 1.0 / len(tags1 | tags2)
+
+    # location和category属于离散属性,基于离散属性距离计算
+    if feature1[4] == feature2[4]: part3 = 0
+    else: part3 = 1
+    # distance = math.exp(-1 * 1.0 / (2 * math.pow(sigma,2)) * math.pow(part1 + weight[3] * part2 + weight[4] * part3 + weight[5] * part4,1.0 / P))
+    distance = math.pow(part1 + weight[3] * part2 + weight[4] * part3 ,1.0 / P)
+    # 非对称的距离函数,如果v follows u,那么u对v的距离降低
+    # if neo4j.CheckFollows(feature2[7],feature1[7]) == True:
+    #     distance *= alpha
+    return distance
+
+def test():
+    feature1 = [0.1,0.1,0.3,set(['a','b','c']),'US','Politics']
+    feature2 = [0.1,0.1,0.3,set(['b','b','c']),'US','Enter']
+    print distance(feature1,feature2)
+    print distanceWithoutDomain(feature1,feature2)
 # test()
