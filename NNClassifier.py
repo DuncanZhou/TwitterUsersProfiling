@@ -65,6 +65,7 @@ def test():
     print "训练集和测试集数量为:%d,%d" % (len(train_set),len(test_set))
     # 三个方法分别在train_set中寻找100个代表性人物,用代表性人物来分类test_set
     epsilons = [0.1560,0.1556,0.1555]
+    # epsilons = [0.1556,0.1555]
     # init.InitialMatrix(train_set)
     print "开始抽取代表性用户"
     for epsilon in epsilons:
@@ -75,11 +76,14 @@ def test():
         profiles3 = sa.SAalgo(100,train_set,datapre.CategoriesDistribution(),epsilon,0.3,10,0.9).Search()
         print "sa方法计算完成"
         with open("%.3f" % epsilon,"wb") as f:
-            f.write("方法:GB; 典型阈值:%f; 代表性子集数量:100; 准确率:%.3f \n" % (epsilon,method.Classify(profiles1,test_set)))
-            f.write("方法:kmedoids; 典型阈值:%f; 代表性子集数量:100; 准确率:%.3f \n" % (epsilon,method.Classify(profiles2,test_set)))
-            f.write("方法:SA; 典型阈值:%f; 代表性子集数量:100; 准确率:%.3f \n" % (epsilon,method.Classify(profiles3,test_set)))
-        print "方法:GB; 典型阈值:%f; 代表性子集数量:100; 准确率:%.3f \n" % (epsilon,method.Classify(profiles1,test_set))
-        print "方法:kmedoids; 典型阈值:%f; 代表性子集数量:100; 准确率:%.3f \n" % (epsilon,method.Classify(profiles2,test_set))
-        print "方法:SA; 典型阈值:%f; 代表性子集数量:100; 准确率:%.3f \n" % (epsilon,method.Classify(profiles3,test_set))
+            accuracy1 = epsilon,method.Classify(profiles1,test_set)
+            f.write("方法:GB; 典型阈值:%f; 代表性子集数量:100; 准确率:%.3f \n" % accuracy1)
+            accuracy2 = epsilon,method.Classify(profiles2,test_set)
+            f.write("方法:kmedoids; 典型阈值:%f; 代表性子集数量:100; 准确率:%.3f \n" % accuracy2)
+            accuracy3 = epsilon,method.Classify(profiles3,test_set)
+            f.write("方法:SA; 典型阈值:%f; 代表性子集数量:100; 准确率:%.3f \n" % accuracy3)
+        print "方法:GB; 典型阈值:%f; 代表性子集数量:100; 准确率:%.3f \n" % accuracy1
+        print "方法:kmedoids; 典型阈值:%f; 代表性子集数量:100; 准确率:%.3f \n" % accuracy2
+        print "方法:SA; 典型阈值:%f; 代表性子集数量:100; 准确率:%.3f \n" % accuracy3
 
 test()
