@@ -7,14 +7,15 @@ import DataPrepare as datapre
 import math
 import numpy as np
 import pickle
+import ResourceLoad as resource
 
 a = 2
 b = 50
-Sampling_Number = 1000
 # 一共分为三个部分,属性损耗,分布损耗,代表性子集差异性
 
 categories = datapre.GetUserCategory()
-
+# Repre = resource.Resource(categories).Repre
+# Repre_id = resource.Resource(categories).Repre_id
 # 计算一个结点对另一个节点的代表性
 def Repre(u,v):
     if u == v:
@@ -37,21 +38,16 @@ def sigmoid(x):
 def AttributeRepresentativeByDomain(original_features,profiles,domain):
     # 加载该领域的代表性矩阵
     R = np.load("new%sRepresentativeMatrix.npy" % domain)
+    # R = Repre[domain]
     # 加载id字典
     open_file = open("new%sRepresentativeDictionary.pickle" % domain)
     R_dic = pickle.load(open_file)
     open_file.close()
-
+    # R_dic = Repre_id[domain]
     profile_domain = [id for id in profiles if original_features[id][5] == domain]
 
     # 将profile_domain中的最大值相加
     repre = sum(np.max(np.asarray([R[R_dic[id]] for id in profile_domain]),axis=0))
-    # original_domain = people[domain]
-    # profile_domain = [id for id in profiles if original_features[id][5] == domain]
-    # # repre = 0
-    # # for key in original_domain:
-    # #     repre += max(Repre(original_features[u],original_features[key]) for u in profile_domain)
-    # repre = sum(max(Repre(original_features[u],original_features[key]) for u in profile_domain) for key in original_domain)
     return repre
 
 # 属性代表性

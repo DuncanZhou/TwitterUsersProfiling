@@ -2,14 +2,12 @@
 #-*-coding:utf-8-*-
 '''@author:duncan'''
 
-import Distance as dist
 import DataPrepare as datapre
 import Metric as metric
 import time
 from copy import deepcopy
 from numpy import *
 import numpy as np
-import pickle
 import os
 
 class Greedy:
@@ -29,10 +27,10 @@ class Greedy:
         self.best_profiles = set()
         # 最大的代表性
         self.max_repre = 0
-        # 记录每个领域内按照目标函数值从小到大排序
-        self.replace = {}
-        self.Repre = {}
+
         # 一次性加载代表性矩阵和id字典
+        self.Repre = {}
+
         for category in categories:
             self.Repre[category] = np.load("new%sRepresentativeMatrix.npy" % category)
         self.Repre_id = {}
@@ -40,6 +38,33 @@ class Greedy:
             open_file = open("new%sRepresentativeDictionary.pickle" % category)
             self.Repre_id[category] = pickle.load(open_file)
             open_file.close()
+
+        # 某个具体领域代表性计算
+    def AttributeRepresentativeByDomain(self,profiles,domain):
+        # 加载该领域的代表性矩阵
+        # R = np.load("new%sRepresentativeMatrix.npy" % domain)
+        R = self.Repre[domain]
+        # 加载id字典
+        # open_file = open("new%sRepresentativeDictionary.pickle" % domain)
+        # R_dic = pickle.load(open_file)
+        # open_file.close()
+        R_dic = self.Repre_id[domain]
+        profile_domain = [id for id in profiles if self.features[id][5] == domain]
+
+        # 将profile_domain中的最大值相加
+        repre = sum(np.max(np.asarray([R[R_dic[id]] for id in profile_domain]),axis=0))
+        return repre
+
+    # 属性代表性
+    def AttributeRepresentative(self,profiles):
+        # 分别在每个领域内计算代表性
+        repre = 0
+        for category in self.categories:
+            # 得到profiles中在这领域的代表性用户
+            profile_domain = [id for id in profiles if self.features[id][5] == category]
+            if len(profile_domain) != 0:
+                repre += self.AttributeRepresentativeByDomain(profile_domain,category)
+        return repre
 
     # 贪心寻找,暂不管领域典型条件
     def SearchWithoutConstraints(self):
@@ -126,51 +151,6 @@ class Greedy:
                 break
         return profiles
 
-    # 贪心算法保证k个情况
-    # def SearchWithK(self):
-    #     people = datapre.People()
-    #     profiles = set()
-    #     has_category = set()
-    #     category_loss = {}
-    #     count = 0
-    #     while count < self.k:
-    #         results = {}
-    #         for category in self.categories.keys():
-    #             if category in has_category:
-    #                 continue
-    #             result = {}
-    #             # tuples为该领域所有的人
-    #             tuples = people[category]
-    #             for id in tuples:
-    #                 if id not in profiles:
-    #                     profiles.add(id)
-    #                     if category not in category_loss.keys():
-    #                         result[id] = -metric.AttributeLossByDomain(self.features, profiles,category)
-    #                     else:
-    #                         result[id] = metric.AttributeLossByDomain(self.features,profiles,category) - category_loss[category]
-    #                     profiles.remove(id)
-    #             results[(min(result.items(),key=lambda key:key[1]))[0]] = (min(result.items(),key=lambda key:key[1]))[1]
-    #
-    #         to_add = (min(results.items(),key=lambda key:key[1]))[0]
-    #         # print self.features[to_add][5]
-    #         # 检查该领域有没有超出人数限制
-    #         number = 0
-    #         category = self.features[to_add][5]
-    #         for profile in profiles:
-    #             if self.features[profile][5] == category:
-    #                 number += 1
-    #         if number < ((int)(self.k * self.categories[category]) + 1):
-    #             # 可以加入
-    #             profiles.add(to_add)
-    #             print self.features[to_add][5]
-    #             category_loss[category] = metric.AttributeLossByDomain(self.features,profiles,category)
-    #             count += 1
-    #         else:
-    #             # 该领域不能再加入元素了
-    #             has_category.add(self.features[to_add][5])
-    #         # print count
-    #     return profiles
-
     # 对非典型的元素进行替换
     def Replace(self,target,profiles):
         # people为每个领域的用户集合
@@ -208,20 +188,6 @@ class Greedy:
                     return to_replace
         return None
 
-        # # 对target进行替换(在其所属领域寻找满足领域典型的,同样使用贪心算法)
-        # index = profiles.index(target)
-        # old_element = profiles[index]
-        # results = {}
-        # for person in people[self.features[target][5]]:
-        #     if person != target and person not in profiles and metric.checkOneTypical(person,profiles,self.epsilon):
-        #         profiles[index] = person
-        #         results[person] = metric.AttributeRepresentativeByDomain(set(profiles),self.features[target][5])
-        # new_element = (max(results.items(),key=lambda key:key[1]))[0]
-        # self.replace[target] = new_element
-        # profiles[index] = old_element
-        # # print new_element
-        # return new_element
-
     # 在边集合中删除与点相关的边
     @staticmethod
     def DeleteEdges(edges,vertex):
@@ -258,7 +224,7 @@ class Greedy:
         # 递归终止条件(已经)
         if metric.checkAllTypical(self.features,current_profiles,self.epsilon):
             # print "找到一个可行解"
-            temp = metric.AttributeRepresentative(self.features,set(current_profiles))
+            temp = self.AttributeRepresentative(set(current_profiles))
             if self.max_repre == 0 or temp > self.max_repre:
                 self.max_repre = temp
                 self.best_profiles = set(current_profiles)
@@ -270,7 +236,7 @@ class Greedy:
             return
 
         # 如果当前不满足领域典型的结果都小于当前最优结果,则不需要再往下替换
-        if metric.AttributeRepresentative(self.features,set(current_profiles)) <= self.max_repre:
+        if self.AttributeRepresentative(set(current_profiles)) <= self.max_repre:
             return
         # 三种情况,不替换,替换,可替换可不替换
 
@@ -316,7 +282,7 @@ class Greedy:
     def SearchWithReplace(self):
         # 第一步,在没有领域典型的条件得到的贪心最优值
         current_profiles = self.SearchWithoutConstraints()
-        print metric.AttributeRepresentative(self.features,set(current_profiles))
+        print self.AttributeRepresentative(set(current_profiles))
         # 持久化找到的代表性人物
         # with open("%dGBProfiles" % len(current_profiles),"wb") as f:
         #     for profile in current_profiles:
@@ -336,7 +302,7 @@ class Greedy:
         best_profiles = list(self.best_profiles)
         # 直接贪心搜索到的解的损耗是
         print "直接贪心搜索到的解的属性代表性是"
-        print metric.AttributeRepresentative(self.features,self.best_profiles)
+        print self.AttributeRepresentative(self.best_profiles)
         # vertexs = set()
         # # 顶点替换代价
         # vertexs_cost = {}
@@ -378,7 +344,7 @@ def test():
             f.write("cost %f s" % (end_time - start_time))
             f.write("\n")
             f.write("Attribute Representativeness is:")
-            f.write(str(metric.AttributeRepresentative(datapre.Features(),profiles)))
+            f.write(str(method.AttributeRepresentative(profiles)))
             f.write("\n")
             for profile in profiles:
                 f.write(profile + "\t")

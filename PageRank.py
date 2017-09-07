@@ -6,13 +6,23 @@ import TwitterWithNeo4j as neo4j
 from scipy.sparse import csr_matrix
 import DataPrepare as datapre
 import pickle
-import Metric as metric
-import Experiment as experiment
+import numpy as np
 
 class PageRank:
-    def __init__(self,k,features):
+    def __init__(self,k,features,categories):
         self.k = k
         self.features = features
+        self.categories = categories
+        # 一次性加载代表性矩阵和id字典
+        self.Repre = {}
+
+        for category in categories:
+            self.Repre[category] = np.load("new%sRepresentativeMatrix.npy" % category)
+        self.Repre_id = {}
+        for category in categories:
+            open_file = open("new%sRepresentativeDictionary.pickle" % category)
+            self.Repre_id[category] = pickle.load(open_file)
+            open_file.close()
 
     def GetUserMatrix(self):
         userids = self.features.keys()
@@ -113,15 +123,43 @@ class PageRank:
                     categories[self.features[line.split(" ")[0]][5]] += 1
         return categories
 
+    def AttributeRepresentativeByDomain(self,profiles,domain):
+        # 加载该领域的代表性矩阵
+        # R = np.load("new%sRepresentativeMatrix.npy" % domain)
+        R = self.Repre[domain]
+        # 加载id字典
+        # open_file = open("new%sRepresentativeDictionary.pickle" % domain)
+        # R_dic = pickle.load(open_file)
+        # open_file.close()
+        R_dic = self.Repre_id[domain]
+        profile_domain = [id for id in profiles if self.features[id][5] == domain]
+
+        # 将profile_domain中的最大值相加
+        repre = sum(np.max(np.asarray([R[R_dic[id]] for id in profile_domain]),axis=0))
+        return repre
+
+    # 属性代表性
+    def AttributeRepresentative(self,profiles):
+        # 分别在每个领域内计算代表性
+        repre = 0
+        for category in self.categories:
+            # 得到profiles中在这领域的代表性用户
+            profile_domain = [id for id in profiles if self.features[id][5] == category]
+            if len(profile_domain) != 0:
+                repre += self.AttributeRepresentativeByDomain(profile_domain,category)
+        return repre
+
 # 分别计算PageRank提取出的影响力人物的前40,60,80,100的属性代表性值
 def ReadAttributeRepre(path):
+    features = datapre.Features()
+    method = PageRank(40,features,datapre.GetUserCategory())
     with open(path,"rb") as f:
         lines = f.readlines()
         profiles = set()
         for line in lines:
             profiles.add(line.split(" ")[0])
             if len(profiles) == 40 or len(profiles) == 60 or len(profiles) == 80 or len(profiles) == 100:
-                repre = metric.AttributeRepresentative(profiles)
+                repre = method.AttributeRepresentative(profiles)
                 with open("%dPageRank_results" % len(profiles),"wb") as subf:
                     subf.write("Attribute Features Representative is %f\n" % repre)
                     subf.write("子集为:")
@@ -129,18 +167,14 @@ def ReadAttributeRepre(path):
                         subf.write(profile + "\t")
                     subf.write("\n")
 
-
-
-
 def test():
-    method = PageRank(40,datapre.Features())
+    # method = PageRank(40,datapre.Features(),datapre.GetUserCategory())
     # 获得出入度矩阵
 
     # uMatrix = method.GetUserMatrix()
     # open_file = open("/home/duncan/uMatrix.pickle")
     # uMatrix = pickle.load(open_file)
     # open_file.close()
-    # uMatrix = uMatrix.T
     #
     # # 转移矩阵
     # fMatrix = mat([(1 - 0.85) / len(method.features) for i in range(len(method.features))]).T
@@ -154,7 +188,7 @@ def test():
     # save_file.close()
 
     # method.GetTop100Users("PageRank_results.pickle")
-    # ReadAttributeRepre("/home/duncan/InfluenceTop100")
-    experiment.DomainDistribution(method.ReadDomain("/home/duncan/InfluenceTop100"))
+    ReadAttributeRepre("/home/duncan/InfluenceTop100")
+    # experiment.DomainDistribution(method.ReadDomain("/home/duncan/InfluenceTop100"))
 
 test()

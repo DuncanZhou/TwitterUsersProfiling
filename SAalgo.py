@@ -188,7 +188,7 @@ def test():
     to_run = [40,60,80,100]
     for i in to_run:
         start_time = time.time()
-        method = SAalgo(i,features,datapre.CategoriesDistribution(),0.1555,0.3,10,0.9)
+        method = SAalgo(i,features,datapre.CategoriesDistribution(),0.1560,0.3,10,0.9)
         profiles = method.Search()
         end_time = time.time()
 
@@ -202,4 +202,4 @@ def test():
             f.write("\n")
             for profile in profiles:
                 f.write(profile + "\t")
-# test()
+test()
