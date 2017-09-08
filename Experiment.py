@@ -52,12 +52,12 @@ def PaintRepre(A,B,C,D,alpha):
     plt.show()
 
 # 绘制准确率
-def PaintAccuracy(A,B,C,D):
+def PaintAccuracy(A,B,C,D,epsilon):
     plt.rcParams['font.sans-serif']=['Arial']  #如果要显示中文字体，则在此处设为：SimHei
     plt.rcParams['axes.unicode_minus']=False  #显示负号
 
     x = np.array([1,2,3])
-
+    # x= np.array([1,2,3,4])
     #label在图示(legend)中显示。若为数学公式，则最好在字符串前后添加"$"符号
     #color：b:blue、g:green、r:red、c:cyan、m:magenta、y:yellow、k:black、w:white、、、
     #线型：-  --   -.  :    ,
@@ -76,11 +76,13 @@ def PaintAccuracy(A,B,C,D):
     # plt.plot(x,D,"--",label="PageRank",linewidth=1.5)
     # plt.plot(x,C,"g^")
 
+    # group_labels=['40','60','80','100'] #x轴刻度的标识
     group_labels=['0.1555','0.1556','0.1560'] #x轴刻度的标识
     plt.xticks(x,group_labels,fontsize=12,fontweight='bold') #默认字体大小为10
     plt.yticks(fontsize=12,fontweight='bold')
-    plt.title("Accuracy of Classifying(k=100)",fontsize=12,fontweight='bold')    #默认字体大小为12
-    plt.xlabel(r"$\epsilon$ of domain typical",fontsize=13,fontweight='bold')
+    # plt.title(r"$\epsilon$=%.4f" % epsilon,fontsize=12,fontweight='bold')    #默认字体大小为12
+    plt.title("Accuracy of Classifying",fontsize=12,fontweight='bold')    #默认字体大小为12
+    plt.xlabel(r"$\epsilon$",fontsize=13,fontweight='bold')
     plt.ylabel("Accuracy",fontsize=13,fontweight='bold')
     plt.xlim(1,3)         #设置x轴的范围
     # plt.ylim(23000,46000)
@@ -92,10 +94,11 @@ def PaintAccuracy(A,B,C,D):
     ltext = leg.get_texts()
     plt.setp(ltext, fontsize=12,fontweight='bold') #设置图例字体的大小和粗细
 
+    # plt.savefig('%.4fAccuracy.pdf' % epsilon,format='pdf')  #建议保存为svg格式，再用inkscape转为矢量图emf后插入word中
     plt.savefig('Accuracy.pdf',format='pdf')  #建议保存为svg格式，再用inkscape转为矢量图emf后插入word中
     plt.show()
 
-# 绘制准确率
+# against epsilon
 def PaintEpsilon(A,B,C,method):
     plt.rcParams['font.sans-serif']=['Arial']  #如果要显示中文字体，则在此处设为：SimHei
     plt.rcParams['axes.unicode_minus']=False  #显示负号
@@ -238,11 +241,11 @@ def Paint():
     # PaintRepre(A,B,C,D,0.1555)
 
     # 绘制分类准确性
-    # A = [0.319,0.340,0.342]
-    # B = [0.338,0.368,0.366]
-    # C = [0.387,0.406,0.407]
-    # D = [0.239,0.239,0.239]
-    # PaintAccuracy(A,B,C,D)
+    A = [0.319,0.340,0.342]
+    B = [0.338,0.368,0.366]
+    C = [0.387,0.406,0.407]
+    D = [0.239,0.239,0.239]
+    PaintAccuracy(A,B,C,D,None)
 
     # 绘制GB在不同阈值下的结果
     # A = [43953.424, 45642.373, 46879.324, 47653.545]
@@ -255,13 +258,34 @@ def Paint():
     # C = np.array([43507.348, 44922.403, 45761.403, 46271.064])
 
     # 绘制SA在不同阈值下的结果
-    A = np.array([37583.323, 37975.945, 38289.485, 38436.601])
-    B = np.array([37584.537, 38015.656, 38307.095, 38468.860])
-    C = np.array([37584.537, 38015.656, 38307.095, 38468.860])
-    PaintEpsilon(A,B,C,"SA")
+    # A = np.array([37583.323, 37975.945, 38289.485, 38436.601])
+    # B = np.array([37584.537, 38015.656, 38307.095, 38468.860])
+    # C = np.array([37584.537, 38015.656, 38307.095, 38468.860])
+    # PaintEpsilon(A,B,C,"SA")
 
     # 绘制数据集领域分布
     # DomainDistribution(datapre.CategoriesDistribution())
+
+    # 绘制分类准确性
+    # epsilon = 0.1555
+    # A = [0.320,0.321,0.310,0.319]
+    # B = [0.318,0.350,0.342,0.339]
+    # C = [0.334,0.368,0.377,0.387]
+    # D = [0.176,0.215,0.230,0.239]
+
+    # epsilon = 0.1556
+    # A = [0.332,0.322,0.333,0.340]
+    # B = [0.343,0.352,0.372,0.368]
+    # C = [0.360,0.389,0.400,0.406]
+    # D = [0.176,0.215,0.230,0.239]
+    #
+    # # epsilon = 0.1560
+    # A = [0.332,0.322,0.335,0.342]
+    # B = [0.349,0.362,0.359,0.374]
+    # C = [0.360,0.386,0.401,0.407]
+    # D = [0.176,0.215,0.230,0.239]
+    #
+    # PaintAccuracy(A,B,C,D,0.1560)
 
     # 绘制领域分布图
     # 'Politics','Religion','Military','Education','Economy','Technology','Agriculture','Sports','Entertainment'
