@@ -9,6 +9,8 @@ import math
 import Distance as dist
 import TwitterWithNeo4j as neo4j
 import Metric as metric
+import DataPrepare as datapre
+import time
 
 # 每个样本的格式[Followers,Activity,Influence,following,location,category,Interests_tags,userid]
 
@@ -30,7 +32,7 @@ def Repre(alpha,u,v):
     return (2 * sigmoid(1.0 / distance) - 1) * alpha
 
 # split users according to "location" & "category"
-def Split(parameters,features):
+def Split(features):
     check = [4,5]
     # store the results
     users = {}
@@ -98,3 +100,22 @@ def Search(features,categories,users,alpha,epsilon,k,beta):
         ignore.add(profile)
         print "代表性子集大小为%d" % len(profiles)
     return profiles
+
+def Run():
+    alphas = ["1.8","1.65","1.5","1.35","1.2"]
+    numbers = [40,60,80,100,120]
+    epsilons = [0.1558,0.1557,0.1556]
+    features = datapre.Features()
+    for alpha in alphas:
+        for number,epsilon in zip(numbers,epsilons):
+            start_time = time.time()
+            profiles = Search(features,datapre.CategoriesDistribution(), Split(features), float(alpha),epsilon,1)
+            end_time = time.time()
+            with open("S3%s/%d_%.4f" % (alpha,number,epsilon),"wb") as f:
+                f.write("cost %f s" % (end_time - start_time))
+                f.write("Attribute Representativeness is:")
+                f.write(str(metric.AttributeRepresentative(features, profiles)))
+                f.write("\n")
+                for profile in profile:
+                    f.write(profile + "\t")
+Run()
