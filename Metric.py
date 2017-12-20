@@ -20,6 +20,8 @@ class Metrics:
         self.id_dic = dict(zip(id_list,range(len(id_list))))
         # 关系图
         self.g = g
+        # id_list
+        self.id_list = id_list
 
     # 根据pandas里的索引返回对应的userid
     def GetID(self,profiles):
@@ -27,7 +29,10 @@ class Metrics:
 
     # 获得用户的邻居
     def GetNeighbours(self,u):
-        return set(all_neighbors(self.g,self.id_dic[u]))
+        if self.id_dic[str(u)] in self.g:
+            return set([int(self.id_list[i]) for i in all_neighbors(self.g,self.id_dic[str(u)])])
+        else:
+            return set()
 
     # 计算特征代表性
     def Rc(self,users,profiles,R):
@@ -53,7 +58,5 @@ class Metrics:
     # 目标函数
     def RScore(self,profiles):
         rc = self.Rc(self.users,profiles,self.R)
-        print "属性特征代表性%f" % rc
         rt = self.Rt(profiles)
-        print "拓扑结构代表性%f" % rt
         return 2.0 * rc * rt / (rc + rt)
