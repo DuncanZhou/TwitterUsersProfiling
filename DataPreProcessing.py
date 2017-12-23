@@ -5,7 +5,6 @@
 import MySQLdb
 import MySQLdb.cursors
 import csv
-import FastNewman as cnm
 import TwitterWithNeo4j as neo4j
 import cPickle as pickle
 import networkx as nx
@@ -109,19 +108,6 @@ def r(u,v):
     else:
         return 2.0 / (1 + math.exp(-1 / dist)) - 1
 
-# 计算代表性子集对v的代表性
-def Repre(users,profiles,v,R):
-    '''
-
-    :param profiles: 代表性子集
-    :param v: v 属于原集
-    :param R: 代表性矩阵
-    :return: 取profiles中对v这一列代表性最大的
-    '''
-    col = users[(users['userid']==v)].index
-    rows = [users[(users['userid']==u)].index for u in profiles]
-    return np.max(R[rows,col])
-
 
 # 所有用户的信息label encoding后写入csv文件中
 def WriteIntoCSV(users):
@@ -156,7 +142,7 @@ def CommunityDetection(id_list_path,rels_path):
     id_list = pickle.load(ids_file)
     # 社区发现
     print "community detection"
-    cnm.fast_newman(id_list,rels,len(id_list),int(len(id_list) * 0.75))
+    # cnm.fast_newman(id_list,rels,len(id_list),int(len(id_list) * 0.75))
 
 def CommunityDetectionByNX(id_list_path,rels_path):
     rel_file = open(rels_path,'rb')
@@ -186,11 +172,24 @@ def Communities():
 
 
 def repre(users,column,feature):
+    rows_num = len(users.index)
     row = np.array(users.iloc[column][feature]).astype(float)
-    rows = np.tile(row,(len(users.index),1)).astype(float)
+    location = users.loc[column]['location']
+    rows = np.tile(row,(rows_num,1)).astype(float)
     d = np.asarray(users[feature])
-    temp = np.sum((rows - d) ** 2,axis=1)
+    #     temp = np.sum((rows - d) ** 2,axis=1)
+    pre = (rows - d) ** 2
+    # 离散值计算
+    location1 = np.full(rows_num,location,int)
+    location2 = np.asarray(users['location'])
+    location_results = np.zeros(rows_num)
+    location_results[location1 == location2] = 1
+    location_results = location_results.reshape(rows_num,1)
+    # 和连续值按列拼接
+    temp = np.hstack((pre,location_results))
+    temp = np.sqrt(np.sum(temp,axis=0))
     res = 2 / (np.exp(1 / (-temp ** 0.5)) + 1) - 1
+    print res
     return res
 
 # 计算代表性矩阵
@@ -203,15 +202,14 @@ def GetRepreMatrix(users,category):
     i = 1
     while i < len(users.index):
         res = np.vstack((res,repre(users,i,feature)))
-        print i
         i += 1
     R = np.matrix(res)
     np.save("%sRepresentativeMatrix.npy" % category,R)
 
 def test():
     categories = ["Politics","Sports","Military","Entertainment","Agriculture","Technology","Economy","Education","Religion"]
-    users = GetUsersFromCSV("Religion")
-    GetRepreMatrix(users,"Religion")
+    users = GetUsersFromCSV("Sports")
+    GetRepreMatrix(users,"Sports")
     # print users.index
 
     # features = GetFeatureColumns()
