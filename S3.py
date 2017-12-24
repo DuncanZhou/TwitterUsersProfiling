@@ -9,13 +9,11 @@ import math
 import time
 
 class S3:
-    def __init__(self,users,features,num,R,k,beta):
+    def __init__(self,users,num,R,k,beta):
         # 用户数据
         self.users = users
         # 子集大小
         self.k = k
-        # 选用特征
-        self.features = features
         # 平衡参数
         self.beta = beta
         # 代表性矩阵
@@ -63,10 +61,15 @@ class S3:
     # 直接假设已经按照领域划分了group
     def SearchWithNoGroups(self):
         profiles = set()
+        results_vector = np.asarray([0 for i in xrange(self.num)])
         while len(profiles) < self.k:
             # 每次选择使得rc最大的加入
-            results = {i:np.sum(np.mean(self.R[list(profiles | set([i])),:],axis=0),axis=0) / self.num for i in range(self.num) if i not in profiles}
+            # results = {i:np.sum(np.mean(np.vstack((results_vector,self.R[i])),axis=0),axis=0) / (len(profiles)+1) for i in range(self.num) if i not in profiles}
+            results = {i:np.sum(results_vector * len(profiles) + self.R[i],axis=0) / self.num for i in range(self.num) if i not in profiles}
             profiles.add(max(results.items(),key=lambda key:key[1])[0])
+            # 更新results_vector
+            results_vector = (results_vector * len(profiles) + self.R[i]) / len(profiles)
+            # print len(profiles)
         # 将索引转换成用户id
         profiles = [self.users.loc[i]['userid'] for i in profiles]
         return profiles
@@ -86,11 +89,11 @@ class S3:
         return profiles
 
 def test():
-    category = "Religion"
-    features,users,R,id_list,g = init.Init(category)
-    metric = Metric.Metrics(users,features,R,id_list,g)
+    category = "Sports"
+    users,R,id_list,g = init.Init(category)
+    metric = Metric.Metrics(users,R,id_list,g)
     num = len(users) * 0.05
-    s3 = S3(users,features,len(users),R,num,0.6)
+    s3 = S3(users,len(users),R,num,0.6)
     start_time = time.time()
     profiles = s3.SearchWithNoGroups()
     end_time = time.time()

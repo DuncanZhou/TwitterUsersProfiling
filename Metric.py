@@ -6,13 +6,11 @@ import numpy as np
 from networkx.classes.function import all_neighbors
 
 class Metrics:
-    def __init__(self,users,feature,R,id_list,g):
+    def __init__(self,users,R,id_list,g):
         # 用户数据
         self.users = users
         # 用户总个数
         self.num = len(users)
-        # 特征列
-        self.feature = feature
         # 代表性矩阵
         self.R = R
         # 在图中对应的节点编号
@@ -22,6 +20,7 @@ class Metrics:
         self.g = g
         # id_list
         self.id_list = id_list
+
 
     # 根据pandas里的索引返回对应的userid
     def GetID(self,profiles):
@@ -46,7 +45,9 @@ class Metrics:
         # 找到profiles对应的index
         rows = [users[(users['userid'] == u)].index[0] for u in profiles]
         # R中找rows中每列最大值
-        return np.sum(np.max(R[rows,:],axis=0),axis=0) / self.num
+        # return np.sum(np.max(R[rows,:],axis=0),axis=0) / self.num
+        # R中找rows中的每列平均值
+        return np.sum(np.mean(R[rows,:],axis=0),axis=0) / self.num
 
     # 计算结构代表性
     def Rt(self,profiles):
@@ -59,4 +60,4 @@ class Metrics:
     def RScore(self,profiles):
         rc = self.Rc(self.users,profiles,self.R)
         rt = self.Rt(profiles)
-        return 2.0 * rc * rt / (rc + rt)
+        return rc,rt,2.0 * rc * rt / (rc + rt)
