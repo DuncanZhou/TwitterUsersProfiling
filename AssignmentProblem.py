@@ -31,10 +31,17 @@ def Assignment(M,selected,index,visited,sum):
             visited[j] = True
             selected[index] = -1
 
+def Communities(category):
+    path = "Communities/" + category + "Communities"
+    with open(path,'r') as f:
+        communites = eval(f.read())
+    print len(communites)
+
 if __name__ == '__main__':
     M = np.matrix([[3,1,0],[0,2,7],[4,5,6]])
     best = 0
     selected = [-1 for i in xrange(len(M))]
     visited = [True for i in xrange(M.shape[1])]
-    Assignment(M,selected,0,visited,0)
-    print best_selected
+    # Assignment(M,selected,0,visited,0)
+    # print best_selected
+    Communities("Agriculture")
