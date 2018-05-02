@@ -15,8 +15,14 @@ import urllib
 import threading
 
 def crawlDetailPage(url):
+    # 使用代理ip
+    proxy ={'http':"http://183.159.91.135:18118",
+            'http':'http://183.128.32.204:18118',
+            'http':'http://125.127.158.162:61234',
+            'https':'https://60.177.226.43:18118',
+            'http':'http://111.183.231.253:61234'}
     ids = set()
-    req = requests.get(url)
+    req = requests.get(url,proxies=proxy)
     jsondata = req.text
     data = json.loads(jsondata)
 
@@ -97,6 +103,11 @@ def GetFollowing(pid):
             continue
         if count > end:
             break
+        # 如果数据库中有了则跳过
+        cursor.execute("select count(*) from relationships where suid = '%s'" % id)
+        results = cursor.fetchone()
+        if results[0] >= 1:
+            continue
         following = Following(str("100505" + id))
         # 在数据库中的,插入到target_db中
         following &= total_ids
@@ -113,6 +124,7 @@ def GetFollowing(pid):
 
 # 得到关注列表
 def Following(uid):
+
     print "正在获取%s用户的关注列表" % uid
     following = set()
     url = "https://m.weibo.cn/api/container/getSecond?containerid=%s_-_FOLLOWERS&page=" % uid
@@ -121,7 +133,7 @@ def Following(uid):
     while flag:
         try:
             following |= crawlDetailPage(url+str(pageid))
-            time.sleep(random.choice([0,1,2,3]))
+            time.sleep(random.choice([1,2,3,4]))
             pageid += 1
             print "第%d页" % pageid
             if pageid > 100:
@@ -138,5 +150,6 @@ def run():
         t.start()
         pid += 1
 run()
-# GetFollowing()
+
+# GetFollowing(1)
 # Following("1005053973247341")
