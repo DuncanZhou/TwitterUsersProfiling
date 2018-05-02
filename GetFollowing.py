@@ -12,6 +12,7 @@ from BeautifulSoup import BeautifulSoup
 import MySQLdb as mysql
 import cookielib
 import urllib
+import threading
 
 def crawlDetailPage(url):
     ids = set()
@@ -23,7 +24,7 @@ def crawlDetailPage(url):
 
     for i in content:
         followingId = i['user']['id']
-        ids.add(followingId)
+        ids.add(str(followingId))
     return ids
 
 # 解析cookie
@@ -70,7 +71,7 @@ def GetContainerId(id):
     r = re.findall(r"\[\'page_id\'\]=\'(\d+)\'",string)
     return r[0]
 
-def GetFollowing():
+def GetFollowing(pid):
     db = mysql.connect(host="192.168.131.191",port=3306,db="weibo", user="root",passwd="", charset='utf8' )
     cursor = db.cursor()
 
@@ -85,18 +86,27 @@ def GetFollowing():
     for res in results:
         famous_ids.add(res[0])
     count = 0
+    period = len(famous_ids) / 10
+    start = (pid - 1) * period
+    end = pid * period
     # 对famous抓取关注的用户列表
     for id in famous_ids:
         # 先获取container_id
-        id = "100505" + id
-        following = Following(id)
+        count += 1
+        if count <= 65 or count < start:
+            continue
+        if count > end:
+            break
+        following = Following(str("100505" + id))
         # 在数据库中的,插入到target_db中
         following &= total_ids
+        print len(following)
         for tuid in following:
-            cursor.execute("insert into users(suid,tuid) values('%s','%s')" % (id,tuid))
-        count += 1
+            cursor.execute("insert into relationships(suid,tuid) values('%s','%s')" % (id,tuid))
+        db.commit()
+
         print "已完成%d个用户" % count
-        time.sleep(random.choice([0,1,2,3,4,5]))
+        # time.sleep(random.choice([0,1,2,3,4,5]))
 
     cursor.close()
     db.close()
@@ -111,14 +121,22 @@ def Following(uid):
     while flag:
         try:
             following |= crawlDetailPage(url+str(pageid))
-            time.sleep(random.choice([0,1,2,3,4,5]))
+            time.sleep(random.choice([0,1,2,3]))
             pageid += 1
             print "第%d页" % pageid
+            if pageid > 100:
+                break
         except Exception as e:
             flag = False
-    print len(following)
     return following
 
-GetFollowing()
+# i/o密集型应该使用多线程
+def run():
+    pid = 1
+    while pid <= 10:
+        t = threading.Thread(target=GetFollowing,args=(pid,))
+        t.start()
+        pid += 1
+run()
 # GetFollowing()
 # Following("1005053973247341")
