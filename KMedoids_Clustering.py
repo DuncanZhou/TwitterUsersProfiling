@@ -6,11 +6,14 @@
 # 寻找在聚类簇中距离之差之和最小的作为最新质点.同时,因为这样,该算法的复杂度高于k-means
 
 import Initial as init
-import numpy as np
 import random
+import numpy as np
+from networkx.classes.function import all_neighbors
+import Metric
+import time
 
 class KMedoidsCluster:
-    def __init__(self,k,users,R):
+    def __init__(self,k,users,R,g,id_list,need):
         # 需要聚类的数据集合
         self.users = users
         # 定义最大迭代次数
@@ -19,6 +22,12 @@ class KMedoidsCluster:
         self.k_min = k
         # 代表性矩阵
         self.R = R
+        # 拓扑结构
+        self.g = g
+        # 结点
+        self.id_list = id_list
+        # 需要采样的人数
+        self.need = need
 
 
     # 计算质点到其聚类簇中其它点的代表性之和
@@ -81,26 +90,88 @@ class KMedoidsCluster:
                 if new_mediod != seed:
                     # 需要继续迭代
                     flag = False
-
             if flag == True:
                 # 停止迭代
                 break
             k_seeds = new_k_seeds
             iteration += 1
             print "迭代%d次" % iteration
+        print "聚类完成"
+        id_cluster = {}
+        for key in cluster.keys():
+            ids = reduce(lambda x,y:x|y, [set([self.users.iloc[i]['userid']]) for i in cluster[key]])
+            id_cluster[key] = ids
 
-        return cluster,k_seeds
+        return cluster,k_seeds,id_cluster
 
 
-    # 聚类结束
-    def Search(self):
-        pass
+    # 代表性子集对某个聚类簇的代表性
+    def CalcRc(self,profiles,cluster):
+        '''
 
+        :param profiles: 代表性子集
+        :param cluster: 某个聚类簇
+        :return:
+        '''
+        maxes = np.max(self.R[list(profiles),:],axis=0)
+        return np.sum(maxes[list(cluster)],axis=0) / len(cluster)
 
+    # 代表性子集对某个聚类簇的拓扑代表性
+    def CalcRt(self,profiles,cluster):
+        '''
+
+        :param profiles: 代表性子集
+        :param cluster: 某个聚类簇
+        :return:
+        '''
+        clusteri = reduce(lambda x,y:x | y,[set([self.users.iloc[i]['userid']]) for i in cluster])
+        neighbours = reduce(lambda x,y:x | y,[set(all_neighbors(self.g,str(self.users.iloc[u]['userid']))) if str(u) in self.g else set() for u in profiles])
+        return len(neighbours & clusteri) * 1.0 / len(clusteri)
+
+    # 采样
+    def Sample(self,gamma,clusters,id_cluster):
+        num = len(self.users)
+        profiles = set()
+        # 初始化每个cluster的Rc和Rt
+        Rc = {i:0 for i in clusters.keys()}
+        Rt = {i:0 for i in clusters.keys()}
+        neighbours = {i:set() for i in id_cluster.keys()}
+        while len(profiles) < self.need:
+            results = {}
+            # 对于不在profiles中的元素继续加入,加入使得F最大的元素
+            # 从每个聚类簇中选取元素加入
+            for key in clusters.keys():
+                temp = {i:len(clusters[key]) * 1.0 / num * (gamma*self.CalcRc(profiles | set([i]),clusters[key]) - gamma*Rc[key]+(1-gamma)*(len(set(all_neighbors(self.g,self.users.iloc[i]['userid'])) & id_cluster[key]                                                                                                                                       - neighbours[key]) if self.users.iloc[i]['userid'] in self.g else 0)) for i in clusters[key] if i not in profiles}
+                # 找到temp中增长最大的值和结果
+                item = max(temp.items(),key=lambda key:key[1])
+                results[item[0]] = item[1]
+            # 从results找到增长最大的加入
+            to_add = max(results.items(),key=lambda key:key[1])[0]
+            # to_add = results.keys()[to_add]
+            profiles.add(to_add)
+            # 确定to_add属于哪个聚类簇
+            for key in clusters.keys():
+                if to_add in clusters[key]:
+                    belong = key
+                    break
+            print len(profiles)
+            # 更新belong的Rc和Rt,neigbours
+            neighbours[belong] |= set(all_neighbors(self.g,self.users.iloc[to_add]['userid'])) if self.users.iloc[to_add]['userid'] in self.g else set()
+            Rc[belong] = self.CalcRc(profiles,clusters[belong])
+            Rt[belong] = self.CalcRt(profiles,clusters[belong])
+        profiles = [self.users.iloc[i]['userid'] for i in profiles]
+        return profiles
 
 def test():
     k_clusters = [10,15,20]
     users,R,id_list,g = init.Init("Actor")
-    clustering = KMedoidsCluster(k_clusters[0],users,R)
-    clustering.Cluster()
+    clustering = KMedoidsCluster(k_clusters[0],users,R,g,id_list,int(len(users) * 0.05))
+    start = time.time()
+    cluster,seeds,id_cluster = clustering.Cluster()
+    profiles = clustering.Sample(0.8,cluster,id_cluster)
+    end = time.time()
+    metric = Metric.Metrics(users,R,id_list,g)
+    rc,rt,rscore = metric.RScore(profiles)
+    print "cost %f s" % (end - start)
+    print "rc:%f,rt:%f,rscore:%f" % (rc,rt,rscore)
 test()
