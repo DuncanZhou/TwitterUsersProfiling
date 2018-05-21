@@ -81,13 +81,16 @@ class KMedoidsCluster:
             # 更新质点向量
             # flag来判断是否需要停止迭代
             flag = True
-            # 对每个聚类簇分别判断
+            # 对每个聚类簇分别判断,同时需要更新cluster
             print "更新聚类中心"
             new_k_seeds = set()
             for seed in k_seeds:
                 new_mediod = self.SelectNewMediod(list(cluster[seed]))
                 new_k_seeds.add(new_mediod)
                 if new_mediod != seed:
+                    # 替换cluster[seed]的键值
+                    cluster[new_mediod] = cluster[seed]
+                    cluster.pop(seed)
                     # 需要继续迭代
                     flag = False
             if flag == True:
@@ -100,7 +103,7 @@ class KMedoidsCluster:
         id_cluster = {}
         for key in cluster.keys():
             ids = reduce(lambda x,y:x|y, [set([self.users.iloc[i]['userid']]) for i in cluster[key]])
-            id_cluster[key] = ids
+            id_cluster[self.users.iloc[key]['userid']] = ids
 
         return cluster,k_seeds,id_cluster
 
@@ -168,10 +171,12 @@ def test():
     clustering = KMedoidsCluster(k_clusters[0],users,R,g,id_list,int(len(users) * 0.05))
     start = time.time()
     cluster,seeds,id_cluster = clustering.Cluster()
-    profiles = clustering.Sample(0.8,cluster,id_cluster)
-    end = time.time()
-    metric = Metric.Metrics(users,R,id_list,g)
-    rc,rt,rscore = metric.RScore(profiles)
-    print "cost %f s" % (end - start)
-    print "rc:%f,rt:%f,rscore:%f" % (rc,rt,rscore)
-test()
+    # 通过聚类筛选代表性人物
+
+    # profiles = clustering.Sample(0.8,cluster,id_cluster)
+    # end = time.time()
+    # metric = Metric.Metrics(users,R,id_list,g)
+    # rc,rt,rscore = metric.RScore(profiles)
+    # print "cost %f s" % (end - start)
+    # print "rc:%f,rt:%f,rscore:%f" % (rc,rt,rscore)
+# test()
