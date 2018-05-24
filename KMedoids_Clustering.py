@@ -11,10 +11,18 @@ import numpy as np
 from networkx.classes.function import all_neighbors
 import Metric
 import time
+import numpy as np
+import math
+from sklearn.cluster import KMeans
+from sklearn.cluster import k_medoids_
+import pandas as pd
+from sklearn.metrics.pairwise import euclidean_distances
 
 class KMedoidsCluster:
-    def __init__(self,k,users,R,g,id_list,need):
+    def __init__(self,k,ids,users,R,g,need):
         # 需要聚类的数据集合
+        self.ids = ids
+        # 人物信息
         self.users = users
         # 定义最大迭代次数
         self.Max_iteration = 30
@@ -24,8 +32,6 @@ class KMedoidsCluster:
         self.R = R
         # 拓扑结构
         self.g = g
-        # 结点
-        self.id_list = id_list
         # 需要采样的人数
         self.need = need
 
@@ -49,7 +55,7 @@ class KMedoidsCluster:
     def Cluster(self):
         k = self.k_min
         # 初始化种子
-        k_seeds = set(random.sample(range(len(self.users)),k))
+        k_seeds = set(random.sample(self.ids,k))
         # 聚类领域
         # 聚类簇
         cluster = {}
@@ -63,7 +69,7 @@ class KMedoidsCluster:
                 cluster[seed] = cluster[seed] | {seed}
 
             # 对所有元素进行聚类
-            for i in xrange(len(self.users)):
+            for i in self.ids:
                 # results = {seed:self.R[self.R_dic[seed],self.R_dic[key]] for seed in k_seeds}
                 # results = {}
                 # for seed in k_seeds:
@@ -93,10 +99,10 @@ class KMedoidsCluster:
                     cluster.pop(seed)
                     # 需要继续迭代
                     flag = False
+            k_seeds = new_k_seeds
             if flag == True:
                 # 停止迭代
                 break
-            k_seeds = new_k_seeds
             iteration += 1
             print "迭代%d次" % iteration
         print "聚类完成"
@@ -166,11 +172,13 @@ class KMedoidsCluster:
         return profiles
 
 def test():
-    k_clusters = [10,15,20]
-    users,R,id_list,g = init.Init("Actor")
-    clustering = KMedoidsCluster(k_clusters[0],users,R,g,id_list,int(len(users) * 0.05))
-    start = time.time()
-    cluster,seeds,id_cluster = clustering.Cluster()
+    # k_clusters = [10,15,20]
+    # users,R,id_list,g = init.Init("Actor")
+    # clustering = KMedoidsCluster(k_clusters[0],users,R,g,id_list,int(len(users) * 0.05))
+    # start = time.time()
+    features = ['friends','followers','statuses','favourites','gender','verified','city','urank']
+    # cluster = clustering.ClusterWithoutMatrix(features)
+    # cluster,seeds,id_cluster = clustering.Cluster()
     # 通过聚类筛选代表性人物
 
     # profiles = clustering.Sample(0.8,cluster,id_cluster)
@@ -179,4 +187,12 @@ def test():
     # rc,rt,rscore = metric.RScore(profiles)
     # print "cost %f s" % (end - start)
     # print "rc:%f,rt:%f,rscore:%f" % (rc,rt,rscore)
+
+    # 实验sklearn的kmeans算法
+    users = pd.read_csv("users/"+"Common"+"Users.csv")
+    X = np.asarray(users[features])
+    # kmeans = KMeans(n_clusters=10,random_state=0).fit(X)
+    kmedoids = k_medoids_.KMedoids(n_clusters=10,random_state=0).fit(X)
+    # 输出label
+    # print kmeans.cluster_centers_
 # test()
