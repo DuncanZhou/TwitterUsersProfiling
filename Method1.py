@@ -15,7 +15,7 @@ import Metric
 import numpy as np
 
 class Method1:
-    def __init__(self,users,R,g,alpha,lam):
+    def __init__(self,users,R,g,alpha,lam,category,dataset):
         # 用户特征向量集
         self.users = users
         # 代表性矩阵
@@ -26,6 +26,10 @@ class Method1:
         self.lam = lam
         # 采样率
         self.alpha = alpha
+        # 领域
+        self.category = category
+        # 数据集
+        self.dataset = dataset
 
     # step1: 根据特征聚类
     def ClusteringByCharacteristics(self,users,R,k):
@@ -101,5 +105,8 @@ class Method1:
             # 从results中选取增量最大的加入
             to_add = max(results,key=results.get)
             profiles.add(to_add)
+
+        # 输出p, r, f1
+        metric.PR(profiles,self.alpha,self.category,self.alpha,self.dataset)
 
         return profiles
