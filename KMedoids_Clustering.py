@@ -14,7 +14,6 @@ import time
 import numpy as np
 import math
 from sklearn.cluster import KMeans
-from sklearn.cluster import k_medoids_
 import pandas as pd
 from sklearn.metrics.pairwise import euclidean_distances
 
@@ -34,6 +33,8 @@ class KMedoidsCluster:
         self.g = g
         # 需要采样的人数
         self.need = need
+        # 转换一下索引结构
+        self.index = {userid: self.users[self.users.userid == userid].index[0] for userid in self.ids}
 
 
     # 计算质点到其聚类簇中其它点的代表性之和
@@ -44,7 +45,8 @@ class KMedoidsCluster:
         :param point: 质点
         :return:
         '''
-        return sum(self.R[point][clusters])
+        clusters_index = [self.index[i] for i in clusters]
+        return sum(self.R[self.index[point]][clusters_index])
 
     # 选取新的质点,代表性最大的作为新的质点
     def SelectNewMediod(self,clusters):
@@ -77,7 +79,10 @@ class KMedoidsCluster:
                 # 距离k_seeds中的id最近,并入id聚类簇中
                 if i in k_seeds:
                     continue
-                id = np.argmax(self.R[list(k_seeds),i])
+                # 做个索引的转化
+                k_seeds_index = [self.index[j] for j in k_seeds]
+                target = self.index[i]
+                id = np.argmax(self.R[k_seeds_index,target])
                 id = list(k_seeds)[id]
                 # 并入该聚类簇中
                 cluster[id] = cluster[id] | set([i])
@@ -106,12 +111,12 @@ class KMedoidsCluster:
             iteration += 1
             print "迭代%d次" % iteration
         print "聚类完成"
-        id_cluster = {}
-        for key in cluster.keys():
-            ids = reduce(lambda x,y:x|y, [set([self.users.iloc[i]['userid']]) for i in cluster[key]])
-            id_cluster[self.users.iloc[key]['userid']] = ids
+        # id_cluster = {}
+        # for key in cluster.keys():
+        #     ids = reduce(lambda x,y:x|y, [set([self.users.iloc[i]['userid']]) for i in cluster[key]])
+        #     id_cluster[self.users.iloc[key]['userid']] = ids | set([self.users.iloc[key]['userid']])
 
-        return cluster,k_seeds,id_cluster
+        return cluster,k_seeds
 
 
     # 代表性子集对某个聚类簇的代表性
@@ -192,7 +197,7 @@ def test():
     users = pd.read_csv("users/"+"Common"+"Users.csv")
     X = np.asarray(users[features])
     # kmeans = KMeans(n_clusters=10,random_state=0).fit(X)
-    kmedoids = k_medoids_.KMedoids(n_clusters=10,random_state=0).fit(X)
+    # kmedoids = k_medoids_.KMedoids(n_clusters=10,random_state=0).fit(X)
     # 输出label
     # print kmeans.cluster_centers_
 # test()

@@ -18,6 +18,8 @@ class Metrics:
         # 在图中对应的节点编号
         # 关系图
         self.g = g
+        # 转换一下索引结构
+        self.index = {userid: users[users.userid == userid].index[0] for userid in users.userid}
 
 
     # 根据pandas里的索引返回对应的userid
@@ -42,9 +44,11 @@ class Metrics:
         '''
         # 找到profiles对应的index
             # rows.append(users[(users['userid'] == u)].index[0])
-        rows = [users[(users['userid'] == u)].index[0] for u in profiles]
+        rows = [self.index[u] for u in profiles]
+        cols = [self.index[u] for u in users]
+        row_matrix = self.R[rows,:]
         # R中找rows中每列最大值
-        return np.sum(np.max(self.R[rows,:],axis=0),axis=0) / self.num
+        return np.sum(np.max(row_matrix[:,cols],axis=0)) / len(cols)
         # R中找rows中的每列平均值
         # return np.sum(np.mean(R[rows,:],axis=0),axis=0) / self.num
 
