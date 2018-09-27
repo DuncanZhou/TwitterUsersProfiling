@@ -14,6 +14,7 @@ from networkx.algorithms.community import greedy_modularity_communities
 import Metric
 import Initial as init
 import config
+import pickle
 
 class Method1:
     def __init__(self,users,R,g,alpha,lam,category,dataset):
@@ -68,6 +69,15 @@ class Method1:
         for key in id_cluster.keys():
             clusters = id_cluster[key]
             results[key] = self.CommunityDetectionOnCluster(clusters)
+        # 将结果先持久化
+        file = open('Temp_Data/cluster_withC.pickle', 'wb')
+        pickle.dump(results, file)
+        file.close()
+
+        file = open('Temp_Data/cluster_num.pickle', 'wb')
+        pickle.dump(clusters_num, file)
+        file.close()
+
         return results,clusters_num
 
     # step3: Sampling(shift步骤先省略)
@@ -89,6 +99,8 @@ class Method1:
 
         # 从每个聚类簇中加入
         metric = Metric.Metrics(self.users,self.R,self.g)
+        # 建立每个用户的索引
+        pos = {}
         while len(profiles) < self.k:
 
             results = {}
@@ -102,6 +114,11 @@ class Method1:
                     community_weight = len(community) * 1.0 / clusters_num[key]
                     # 对每个点加入计算目标函数增量
                     for j in range(len(community)):
+                        if pos.has_key(community[j]) == False:
+                            pos[community[j]] = (key,i)
+                        # 已有则不再加入
+                        if community[j] in profiles:
+                            continue
                         profiles.add(community[j])
                         rc = metric.Rc(community,profiles)
                         rt = metric.Rt(community,profiles)
@@ -110,8 +127,11 @@ class Method1:
 
             # 从results中选取增量最大的加入
             to_add = max(results,key=results.get)
+            # 更新theta
+            theta[pos[to_add]] += results[to_add]
             profiles.add(to_add)
 
+            print "%d" % len(profiles)
         # 输出p, r, f1
         p,r,f1 = metric.PR(profiles,self.alpha,self.category,self.alpha,self.dataset)
         print "precision is %.4f and recall is %.4f and f1-score is %.4f" % (p,r,f1)
@@ -125,12 +145,22 @@ if __name__ == '__main__':
     category = config.twitter_categories[0]
     users,R,g = init.Init(category)
     method1 = Method1(users,R,g,0.01,0.7,category,dataset)
+
     # 先按照特征聚类
     # 聚类簇的个数
-    id_cluster = method1.ClusteringByCharacteristics(10)
-    # 在每个特征聚类中按照拓扑社区发现
-    results,clusters_num = method1.GenerateResults(id_cluster)
+    # id_cluster = method1.ClusteringByCharacteristics(10)
+    # # 在每个特征聚类中按照拓扑社区发现
+    # results,clusters_num = method1.GenerateResults(id_cluster)
+
+    # 读取
+    file = open('Temp_Data/cluster_withC.pickle', 'rb')
+    results = pickle.load(file)
+    file.close()
+
+    file = open('Temp_Data/cluster_num.pickle', 'rb')
+    clusters_num = pickle.load(file)
+    file.close()
     profiles = method1.Sampling(results,clusters_num)
-    print profiles
+    # print profiles
 
 
