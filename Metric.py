@@ -90,5 +90,7 @@ class Metrics:
         true_profiles = self.ReadUsers(path)
         p = len(profiles & true_profiles) * 1.0 / len(profiles)
         r = len(profiles & true_profiles) * 1.0 / len(true_profiles)
+        if p == 0 and r == 0:
+            return 0,0,0
         f1 = 2 * p * r / (p + r)
         return p,r,f1

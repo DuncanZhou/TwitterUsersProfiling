@@ -132,12 +132,15 @@ class Method1:
             profiles.add(to_add)
 
             print "%d" % len(profiles)
+
+        file = open('Temp_Data/profile.pickle', 'wb')
+        pickle.dump(profiles, file)
+        file.close()
         # 输出p, r, f1
-        p,r,f1 = metric.PR(profiles,self.alpha,self.category,self.alpha,self.dataset)
+        p,r,f1 = metric.PR(profiles,self.category,self.alpha,self.dataset)
         print "precision is %.4f and recall is %.4f and f1-score is %.4f" % (p,r,f1)
 
         return profiles
-
 
 if __name__ == '__main__':
     dataset = config.twitter_dataset
